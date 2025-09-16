@@ -1,0 +1,235 @@
+/* SCN Profiles Admin Styles */
+
+/* Gallery Management */
+.scn-gallery-sortable {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+    min-height: 100px;
+    border: 2px dashed #ddd;
+    padding: 1rem;
+    border-radius: 4px;
+}
+
+.scn-gallery-item {
+    position: relative;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: move;
+    background: #fff;
+}
+
+.scn-gallery-item img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+}
+
+.scn-gallery-item .scn-remove-gallery-image {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.scn-gallery-item:hover .scn-remove-gallery-image {
+    opacity: 1;
+}
+
+.scn-gallery-sortable.ui-sortable-placeholder {
+    border: 2px dashed #007cba;
+    background: #f0f8ff;
+    visibility: visible !important;
+}
+
+/* Press Kit Management */
+.scn-press-kit-list {
+    margin-top: 1rem;
+}
+
+.scn-press-kit-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.scn-press-kit-item a {
+    color: #007cba;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.scn-press-kit-item a:hover {
+    text-decoration: underline;
+}
+
+.scn-remove-press-kit-file {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* Services Management */
+.scn-service-item {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background: #fff;
+}
+
+.scn-service-item input[type="text"] {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.scn-service-item textarea {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+
+.scn-remove-service {
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* Badges */
+.scn-badges-container label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.scn-badges-container input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+/* Video Preview */
+.scn-video-preview {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.scn-video-preview img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+/* Upload Buttons */
+#scn-add-gallery-images,
+#scn-add-press-kit-files,
+#scn-add-service {
+    margin-bottom: 1rem;
+}
+
+/* Loading States */
+.scn-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.scn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007cba;
+    border-radius: 50%;
+    animation: scn-spin 1s linear infinite;
+}
+
+@keyframes scn-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error Messages */
+.scn-error {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 0.25rem;
+}
+
+.scn-success {
+    color: #28a745;
+    font-size: 12px;
+    margin-top: 0.25rem;
+}
+
+/* Meta Box Styling */
+.scn-meta-box h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.25rem;
+}
+
+.scn-meta-box .description {
+    color: #666;
+    font-style: italic;
+    margin-top: 0.25rem;
+}
+
+/* Form Table Enhancements */
+.scn-meta-box .form-table th {
+    width: 150px;
+    vertical-align: top;
+    padding-top: 1rem;
+}
+
+.scn-meta-box .form-table td {
+    padding-top: 1rem;
+}
+
+/* Responsive Admin */
+@media (max-width: 768px) {
+    .scn-gallery-sortable {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+    
+    .scn-gallery-item img {
+        height: 100px;
+    }
+    
+    .scn-meta-box .form-table th,
+    .scn-meta-box .form-table td {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 0;
+    }
+}
+
+
