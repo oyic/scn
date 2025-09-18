@@ -119,13 +119,13 @@ class VideoProcessor {
     }
 
     private function getVimeoThumbnail($video_id) {
-        $response = wp_remote_get("https://vimeo.com/api/v2/video/{$video_id}.json");
+        $response = \wp_remote_get("https://vimeo.com/api/v2/video/{$video_id}.json");
         
-        if (is_wp_error($response)) {
+        if (\is_wp_error($response)) {
             return false;
         }
 
-        $data = json_decode(wp_remote_retrieve_body($response), true);
+        $data = json_decode(\wp_remote_retrieve_body($response), true);
         
         if (!empty($data[0]['thumbnail_large'])) {
             return $data[0]['thumbnail_large'];
@@ -197,13 +197,13 @@ class VideoProcessor {
     }
 
     private function getVimeoVideoInfo($video_id) {
-        $response = wp_remote_get("https://vimeo.com/api/v2/video/{$video_id}.json");
+        $response = \wp_remote_get("https://vimeo.com/api/v2/video/{$video_id}.json");
         
-        if (is_wp_error($response)) {
+        if (\is_wp_error($response)) {
             return [];
         }
 
-        $data = json_decode(wp_remote_retrieve_body($response), true);
+        $data = json_decode(\wp_remote_retrieve_body($response), true);
         
         if (empty($data[0])) {
             return [];

@@ -43,12 +43,12 @@ class ImageProcessor {
 
     private function isProfileImage($attachment_id) {
         // Check if this image is attached to a profile post
-        $post = get_post($attachment_id);
+        $post = \get_post($attachment_id);
         if (!$post || $post->post_parent == 0) {
             return false;
         }
 
-        $parent_post = get_post($post->post_parent);
+        $parent_post = \get_post($post->post_parent);
         return $parent_post && $parent_post->post_type === 'scn_profile';
     }
 
@@ -58,18 +58,18 @@ class ImageProcessor {
     }
 
     private function renameImageForSEO($attachment_id) {
-        $post = get_post($attachment_id);
+        $post = \get_post($attachment_id);
         if (!$post) {
             return;
         }
 
-        $parent_post = get_post($post->post_parent);
+        $parent_post = \get_post($post->post_parent);
         if (!$parent_post || $parent_post->post_type !== 'scn_profile') {
             return;
         }
 
-        $first_name = get_post_meta($parent_post->ID, 'scn_first_name', true);
-        $last_name = get_post_meta($parent_post->ID, 'scn_last_name', true);
+        $first_name = \get_post_meta($parent_post->ID, 'scn_first_name', true);
+        $last_name = \get_post_meta($parent_post->ID, 'scn_last_name', true);
 
         if (empty($first_name) || empty($last_name)) {
             return;
@@ -82,32 +82,32 @@ class ImageProcessor {
         }
 
         // Get current file info
-        $file_path = get_attached_file($attachment_id);
+        $file_path = \get_attached_file($attachment_id);
         if (!$file_path) {
             return;
         }
 
         $file_info = pathinfo($file_path);
-        $upload_dir = wp_upload_dir();
+        $upload_dir = \wp_upload_dir();
         $new_file_path = $upload_dir['path'] . '/' . $new_filename;
 
         // Rename the file
         if (rename($file_path, $new_file_path)) {
             // Update attachment metadata
-            update_attached_file($attachment_id, $new_file_path);
+            \update_attached_file($attachment_id, $new_file_path);
             
             // Update the attachment post
-            wp_update_post([
+            \wp_update_post([
                 'ID' => $attachment_id,
                 'post_title' => $new_filename,
-                'post_name' => sanitize_title($new_filename),
+                'post_name' => \sanitize_title($new_filename),
             ]);
 
             // Update attachment metadata
-            $metadata = wp_get_attachment_metadata($attachment_id);
+            $metadata = \wp_get_attachment_metadata($attachment_id);
             if ($metadata) {
                 $metadata['file'] = str_replace($upload_dir['basedir'], '', $new_file_path);
-                wp_update_attachment_metadata($attachment_id, $metadata);
+                \wp_update_attachment_metadata($attachment_id, $metadata);
             }
         }
     }
@@ -118,8 +118,8 @@ class ImageProcessor {
         $last_name = $this->normalizeForFilename($last_name);
 
         // Get current gallery images to determine increment
-        $parent_post = get_post(wp_get_post_parent_id($attachment_id));
-        $gallery_images = get_post_meta($parent_post->ID, 'scn_gallery_images', true) ?: [];
+        $parent_post = \get_post(\wp_get_post_parent_id($attachment_id));
+        $gallery_images = \get_post_meta($parent_post->ID, 'scn_gallery_images', true) ?: [];
         
         // Count existing images with same name pattern
         $increment = 1;
@@ -127,7 +127,7 @@ class ImageProcessor {
             if ($existing_id == $attachment_id) {
                 continue;
             }
-            $existing_post = get_post($existing_id);
+            $existing_post = \get_post($existing_id);
             if ($existing_post && strpos($existing_post->post_title, "{$first_name}-{$last_name}-photo") === 0) {
                 $increment++;
             }
@@ -141,7 +141,7 @@ class ImageProcessor {
         $name = strtolower($name);
         
         // Remove diacritics
-        $name = remove_accents($name);
+        $name = \remove_accents($name);
         
         // Replace spaces and special characters with hyphens
         $name = preg_replace('/[^a-z0-9]+/', '-', $name);
@@ -153,18 +153,18 @@ class ImageProcessor {
     }
 
     private function generateAltText($attachment_id) {
-        $post = get_post($attachment_id);
+        $post = \get_post($attachment_id);
         if (!$post) {
             return;
         }
 
-        $parent_post = get_post($post->post_parent);
+        $parent_post = \get_post($post->post_parent);
         if (!$parent_post || $parent_post->post_type !== 'scn_profile') {
             return;
         }
 
-        $first_name = get_post_meta($parent_post->ID, 'scn_first_name', true);
-        $last_name = get_post_meta($parent_post->ID, 'scn_last_name', true);
+        $first_name = \get_post_meta($parent_post->ID, 'scn_first_name', true);
+        $last_name = \get_post_meta($parent_post->ID, 'scn_last_name', true);
 
         if (empty($first_name) || empty($last_name)) {
             return;
@@ -178,10 +178,10 @@ class ImageProcessor {
         );
 
         // Allow filtering
-        $alt_text = apply_filters('scn/profile/gallery_alt_text', $alt_text, $attachment_id, $parent_post->ID);
+        $alt_text = \apply_filters('scn/profile/gallery_alt_text', $alt_text, $attachment_id, $parent_post->ID);
 
         // Update alt text
-        update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt_text);
+        \update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt_text);
     }
 
     public function generatePressKitFilename($first_name, $last_name, $original_filename) {
@@ -192,12 +192,12 @@ class ImageProcessor {
         $extension = strtolower($file_info['extension']);
         
         // Get increment for press kit files
-        $parent_post_id = get_the_ID();
-        $press_kit_files = get_post_meta($parent_post_id, 'scn_press_kit_files', true) ?: [];
+        $parent_post_id = \get_the_ID();
+        $press_kit_files = \get_post_meta($parent_post_id, 'scn_press_kit_files', true) ?: [];
         
         $increment = 1;
         foreach ($press_kit_files as $existing_id) {
-            $existing_post = get_post($existing_id);
+            $existing_post = \get_post($existing_id);
             if ($existing_post && strpos($existing_post->post_title, "{$first_name}-{$last_name}-presskit") === 0) {
                 $increment++;
             }

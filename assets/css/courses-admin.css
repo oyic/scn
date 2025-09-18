@@ -1,0 +1,187 @@
+/* Courses Admin Styles */
+
+.scn-image-upload {
+    margin: 10px 0;
+}
+
+.scn-image-upload #scn_course_image_preview {
+    margin: 10px 0;
+}
+
+.scn-image-upload #scn_course_image_preview img {
+    max-width: 300px;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.scn-outcomes-container {
+    margin: 10px 0;
+}
+
+.scn-outcome-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+}
+
+.scn-outcome-item input[type="text"] {
+    flex: 1;
+}
+
+.scn-outcome-item .scn-remove-outcome {
+    flex-shrink: 0;
+}
+
+.scn-course-formats {
+    margin: 10px 0;
+}
+
+.scn-course-formats label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: normal;
+}
+
+.scn-course-formats input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+#scn_course_ce_hours:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+}
+
+.scn-ondemand-fields {
+    margin: 10px 0;
+}
+
+.scn-ondemand-fields .form-table th {
+    width: 120px;
+}
+
+.scn-ondemand-fields .form-table td {
+    padding: 10px 0;
+}
+
+.scn-ondemand-fields input[type="text"],
+.scn-ondemand-fields input[type="url"] {
+    width: 100%;
+    max-width: 400px;
+}
+
+.scn-ondemand-fields .description {
+    margin-top: 5px;
+    font-style: italic;
+    color: #666;
+}
+
+/* Meta box styling */
+#scn_course_basic_info .form-table th,
+#scn_course_ce_credits .form-table th,
+#scn_course_formats_outcomes .form-table th,
+#scn_course_ondemand .form-table th {
+    width: 150px;
+    vertical-align: top;
+    padding-top: 15px;
+}
+
+#scn_course_basic_info .form-table td,
+#scn_course_ce_credits .form-table td,
+#scn_course_formats_outcomes .form-table td,
+#scn_course_ondemand .form-table td {
+    padding: 10px 0;
+}
+
+#scn_course_basic_info h4,
+#scn_course_formats_outcomes h4 {
+    margin: 20px 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    color: #333;
+}
+
+#scn_course_basic_info h4:first-child,
+#scn_course_formats_outcomes h4:first-child {
+    margin-top: 0;
+}
+
+/* Checkbox styling */
+.scn-course-formats label,
+.scn-topic-selection label {
+    display: block;
+    margin-bottom: 5px;
+    padding: 5px 0;
+}
+
+.scn-course-formats input[type="checkbox"],
+.scn-topic-selection input[type="checkbox"] {
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* Button styling */
+#scn-add-outcome {
+    margin-top: 10px;
+}
+
+.scn-remove-outcome {
+    color: #a00;
+    border-color: #a00;
+}
+
+.scn-remove-outcome:hover {
+    background: #a00;
+    color: white;
+}
+
+/* Image uploader styling */
+.scn-image-upload .button {
+    margin-right: 10px;
+}
+
+#scn_course_remove_image {
+    color: #a00;
+    border-color: #a00;
+}
+
+#scn_course_remove_image:hover {
+    background: #a00;
+    color: white;
+}
+
+/* Responsive admin styles */
+@media (max-width: 782px) {
+    .scn-outcome-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .scn-outcome-item .scn-remove-outcome {
+        margin-top: 5px;
+        align-self: flex-start;
+    }
+    
+    #scn_course_basic_info .form-table th,
+    #scn_course_ce_credits .form-table th,
+    #scn_course_formats_outcomes .form-table th,
+    #scn_course_ondemand .form-table th {
+        width: auto;
+        display: block;
+        padding-bottom: 5px;
+    }
+    
+    #scn_course_basic_info .form-table td,
+    #scn_course_ce_credits .form-table td,
+    #scn_course_formats_outcomes .form-table td,
+    #scn_course_ondemand .form-table td {
+        display: block;
+        padding-top: 0;
+    }
+}
+
+
+
+
+

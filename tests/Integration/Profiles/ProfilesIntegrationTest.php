@@ -25,7 +25,7 @@ class ProfilesIntegrationTest extends TestCase {
         // Test that capabilities are properly assigned
         $this->profilesModule->addCapabilities();
         
-        $admin_role = get_role('administrator');
+        $admin_role = \get_role('administrator');
         $this->assertTrue($admin_role->has_cap('edit_scn_profiles'));
         $this->assertTrue($admin_role->has_cap('publish_scn_profiles'));
         $this->assertTrue($admin_role->has_cap('delete_scn_profiles'));
@@ -35,7 +35,7 @@ class ProfilesIntegrationTest extends TestCase {
         // Test that the taxonomy is registered
         $this->profilesModule->registerTaxonomies();
         
-        $taxonomy = get_taxonomy('scn_topic');
+        $taxonomy = \get_taxonomy('scn_topic');
         $this->assertNotNull($taxonomy);
         $this->assertEquals('scn_topic', $taxonomy->name);
         $this->assertContains('scn_profile', $taxonomy->object_type);
@@ -60,10 +60,10 @@ class ProfilesIntegrationTest extends TestCase {
 
     public function testPostTypeRegistration() {
         // Test that the post type is registered
-        $post_types = get_post_types(['public' => true], 'names');
+        $post_types = \get_post_types(['public' => true], 'names');
         $this->assertContains('scn_profile', $post_types);
         
-        $post_type = get_post_type_object('scn_profile');
+        $post_type = \get_post_type_object('scn_profile');
         $this->assertNotNull($post_type);
         $this->assertEquals('scn_profile', $post_type->name);
         $this->assertTrue($post_type->public);
@@ -91,7 +91,7 @@ class ProfilesIntegrationTest extends TestCase {
         ];
 
         foreach ($meta_fields as $field) {
-            $meta = get_registered_meta('post', $field);
+            $meta = \get_registered_meta('post', $field);
             $this->assertNotEmpty($meta, "Meta field {$field} should be registered");
         }
     }
@@ -222,11 +222,11 @@ class ProfilesIntegrationTest extends TestCase {
             'post_content' => 'Test content'
         ];
         
-        return wp_insert_post($post_data);
+        return \wp_insert_post($post_data);
     }
 
     private function cleanupTestPost($post_id) {
-        wp_delete_post($post_id, true);
+        \wp_delete_post($post_id, true);
     }
 }
 

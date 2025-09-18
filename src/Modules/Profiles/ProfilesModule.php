@@ -33,7 +33,7 @@ class ProfilesModule {
     }
 
     public function registerTaxonomies() {
-        register_taxonomy('scn_topic', 'scn_profile', [
+        \register_taxonomy('scn_topic', 'scn_profile', [
             'labels' => [
                 'name' => __('Topics', 'scn-membership'),
                 'singular_name' => __('Topic', 'scn-membership'),
@@ -53,7 +53,7 @@ class ProfilesModule {
     }
 
     public function addCapabilities() {
-        $role = get_role('administrator');
+        $role = \get_role('administrator');
         if ($role) {
             $capabilities = [
                 'edit_scn_profiles',
@@ -74,7 +74,7 @@ class ProfilesModule {
         }
 
         // Add capabilities to editors
-        $editor_role = get_role('editor');
+        $editor_role = \get_role('editor');
         if ($editor_role) {
             $editor_capabilities = [
                 'edit_scn_profiles',
@@ -93,7 +93,7 @@ class ProfilesModule {
         }
 
         // Add capabilities to authors
-        $author_role = get_role('author');
+        $author_role = \get_role('author');
         if ($author_role) {
             $author_capabilities = [
                 'edit_scn_profiles',
