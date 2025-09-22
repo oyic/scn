@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SCN Membership
  * Plugin URI: https://scn.org
- * Description: A comprehensive membership management system for SCN.
+ * Description: A comprehensive membership management system for SCCN.
  * Version: 1.0.0
  * Author: SCN Development Team
  * License: GPL v2 or later
@@ -39,6 +39,7 @@ class SCN_Membership_Bootstrap {
     }
 
     private function __construct() {
+        add_action('init', [$this, 'earlyInit'], 5);
         add_action('plugins_loaded', [$this, 'init']);
         register_activation_hook(__FILE__, [$this, 'activate']);
         register_deactivation_hook(__FILE__, [$this, 'deactivate']);
@@ -46,6 +47,27 @@ class SCN_Membership_Bootstrap {
 
     public function init() {
         if (class_exists('SCN\\Membership\\Core\\Plugin')) {
+            $this->plugin = new SCN\Membership\Core\Plugin();
+            $this->plugin->register();
+            
+            // Initialize database
+            $database = new SCN\Membership\Infra\Database();
+            $database->register();
+            
+            // Initialize admin service
+            $admin_service = new SCN\Membership\Admin\AdminService();
+            $admin_service->register();
+            
+            // Register WP-CLI commands
+            if (defined('WP_CLI') && WP_CLI) {
+                \WP_CLI::add_command('scn events', 'SCN\\Membership\\Cli\\EventsCommand');
+            }
+        }
+    }
+
+    public function earlyInit() {
+        if (class_exists('SCN\\Membership\\Core\\Plugin')) {
+            // Force early registration of post types and taxonomies
             $this->plugin = new SCN\Membership\Core\Plugin();
             $this->plugin->register();
         }

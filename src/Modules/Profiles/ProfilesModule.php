@@ -16,12 +16,14 @@ class ProfilesModule {
         $this->admin_interface = new AdminInterface();
         $this->frontend_templates = new FrontendTemplates();
 
+        // Register components immediately
         $this->post_type->register();
         $this->image_processor->register();
         $this->video_processor->register();
         $this->admin_interface->register();
         $this->frontend_templates->register();
 
+        // Register hooks
         add_action('init', [$this, 'init']);
         add_action('init', [$this, 'registerTaxonomies']);
         add_action('init', [$this, 'addCapabilities']);
@@ -50,6 +52,12 @@ class ProfilesModule {
             'show_in_rest' => true,
             'show_admin_column' => true,
         ]);
+        
+        // Flush rewrite rules if this is a new taxonomy
+        if (!get_option('scn_topic_rewrite_rules_flushed')) {
+            flush_rewrite_rules();
+            update_option('scn_topic_rewrite_rules_flushed', true);
+        }
     }
 
     public function addCapabilities() {

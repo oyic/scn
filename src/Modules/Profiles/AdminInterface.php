@@ -4,7 +4,7 @@ namespace SCN\Membership\Modules\Profiles;
 
 class AdminInterface {
     public function register() {
-        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+        // Admin scripts are now handled by ProfilePostType
         add_action('wp_ajax_scn_upload_gallery_image', [$this, 'handleGalleryUpload']);
         add_action('wp_ajax_scn_upload_press_kit_file', [$this, 'handlePressKitUpload']);
         add_action('wp_ajax_scn_reorder_gallery', [$this, 'handleGalleryReorder']);
@@ -15,7 +15,13 @@ class AdminInterface {
     public function enqueueAdminScripts($hook) {
         global $post_type;
 
+        // Check if we're on the profile edit screen
         if ($post_type !== 'scn_profile' || !in_array($hook, ['post.php', 'post-new.php'])) {
+            return;
+        }
+
+        // Check if we have the required constants
+        if (!defined('SCN_MEMBERSHIP_URL') || !defined('SCN_MEMBERSHIP_VERSION')) {
             return;
         }
 
@@ -49,6 +55,11 @@ class AdminInterface {
                 'uploadError' => __('Upload failed. Please try again.', 'scn-membership'),
                 'invalidFileType' => __('Invalid file type. Please select a valid image.', 'scn-membership'),
                 'fileTooLarge' => __('File is too large. Please select a smaller file.', 'scn-membership'),
+                'serviceName' => __('Service name', 'scn-membership'),
+                'serviceDescription' => __('Short description (optional)', 'scn-membership'),
+                'removeService' => __('Remove', 'scn-membership'),
+                'videoPreview' => __('Video Preview', 'scn-membership'),
+                'videoThumbnail' => __('Video thumbnail', 'scn-membership'),
             ],
         ]);
     }

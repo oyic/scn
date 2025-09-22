@@ -8,30 +8,38 @@ class ProfilePostType {
         add_action('init', [$this, 'registerMetaFields']);
         add_action('add_meta_boxes', [$this, 'addMetaBoxes']);
         add_action('save_post', [$this, 'saveMetaFields']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+        
+        // Also register meta boxes on admin_menu to ensure they're added
+        add_action('admin_menu', [$this, 'registerMetaBoxesOnMenu']);
     }
 
     public function registerPostType() {
-        register_post_type('scn_profile', [
-            'labels' => [
-                'name' => __('SCN Profiles', 'scn-membership'),
-                'singular_name' => __('Profile', 'scn-membership'),
-                'add_new' => __('Add New Profile', 'scn-membership'),
-                'add_new_item' => __('Add New Profile', 'scn-membership'),
-                'edit_item' => __('Edit Profile', 'scn-membership'),
-                'new_item' => __('New Profile', 'scn-membership'),
-                'view_item' => __('View Profile', 'scn-membership'),
-                'search_items' => __('Search Profiles', 'scn-membership'),
-                'not_found' => __('No profiles found', 'scn-membership'),
-                'not_found_in_trash' => __('No profiles found in trash', 'scn-membership'),
-            ],
-            'public' => true,
-            'has_archive' => true,
-            'rewrite' => ['slug' => 'profiles'],
-            'supports' => ['title', 'editor', 'thumbnail'],
-            'capability_type' => 'scn_profile',
-            'map_meta_cap' => true,
-            'show_in_rest' => true,
-        ]);
+        // Only register if not already registered by AdminService
+        if (!post_type_exists('scn_profile')) {
+            register_post_type('scn_profile', [
+                'labels' => [
+                    'name' => __('SCN Profiles', 'scn-membership'),
+                    'singular_name' => __('Profile', 'scn-membership'),
+                    'add_new' => __('Add New Profile', 'scn-membership'),
+                    'add_new_item' => __('Add New Profile', 'scn-membership'),
+                    'edit_item' => __('Edit Profile', 'scn-membership'),
+                    'new_item' => __('New Profile', 'scn-membership'),
+                    'view_item' => __('View Profile', 'scn-membership'),
+                    'search_items' => __('Search Profiles', 'scn-membership'),
+                    'not_found' => __('No profiles found', 'scn-membership'),
+                    'not_found_in_trash' => __('No profiles found in trash', 'scn-membership'),
+                ],
+                'public' => true,
+                'has_archive' => true,
+                'rewrite' => ['slug' => 'profiles'],
+                'supports' => ['title', 'editor', 'thumbnail'],
+                'capability_type' => 'scn_profile',
+                'map_meta_cap' => true,
+                'show_in_rest' => true,
+                'show_in_menu' => false, // We'll add it to our custom menu
+            ]);
+        }
     }
 
     public function registerMetaFields() {
@@ -92,7 +100,27 @@ class ProfilePostType {
         ]);
     }
 
-    public function addMetaBoxes() {
+    public function addMetaBoxes($post) {
+        // Only add meta boxes for scn_profile post type
+        if (!$post || $post->post_type !== 'scn_profile') {
+            return;
+        }
+
+        // Add a test meta box first to verify the system is working
+        add_meta_box(
+            'scn_profile_test',
+            __('SCN Profile Test', 'scn-membership'),
+            function($post) {
+                echo '<p><strong>✅ SCN Profile meta boxes are working!</strong></p>';
+                echo '<p>Post ID: ' . $post->ID . '</p>';
+                echo '<p>Post Type: ' . $post->post_type . '</p>';
+                echo '<p>This confirms the meta box system is functioning correctly.</p>';
+            },
+            'scn_profile',
+            'normal',
+            'high'
+        );
+
         add_meta_box(
             'scn_profile_basic_info',
             __('Basic Information', 'scn-membership'),
@@ -533,6 +561,132 @@ class ProfilePostType {
             return 'vimeo';
         }
         return false;
+    }
+
+    public function enqueueAdminScripts($hook) {
+        global $post_type;
+
+        // Check if we're on the profile edit screen
+        if ($post_type !== 'scn_profile' || !in_array($hook, ['post.php', 'post-new.php'])) {
+            return;
+        }
+
+        // Check if we have the required constants
+        if (!defined('SCN_MEMBERSHIP_URL') || !defined('SCN_MEMBERSHIP_VERSION')) {
+            return;
+        }
+
+        wp_enqueue_media();
+        wp_enqueue_script('jquery-ui-sortable');
+        
+        wp_enqueue_script(
+            'scn-profiles-admin',
+            SCN_MEMBERSHIP_URL . 'assets/js/profiles-admin.js',
+            ['jquery', 'jquery-ui-sortable', 'media-upload'],
+            SCN_MEMBERSHIP_VERSION,
+            true
+        );
+
+        wp_enqueue_style(
+            'scn-profiles-admin',
+            SCN_MEMBERSHIP_URL . 'assets/css/profiles-admin.css',
+            [],
+            SCN_MEMBERSHIP_VERSION
+        );
+
+        wp_localize_script('scn-profiles-admin', 'scnProfilesAdmin', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('scn_profiles_admin'),
+            'strings' => [
+                'selectImages' => __('Select Images', 'scn-membership'),
+                'selectFiles' => __('Select Files', 'scn-membership'),
+                'removeImage' => __('Remove Image', 'scn-membership'),
+                'removeFile' => __('Remove File', 'scn-membership'),
+                'uploading' => __('Uploading...', 'scn-membership'),
+                'uploadError' => __('Upload failed. Please try again.', 'scn-membership'),
+                'invalidFileType' => __('Invalid file type. Please select a valid image.', 'scn-membership'),
+                'fileTooLarge' => __('File is too large. Please select a smaller file.', 'scn-membership'),
+                'serviceName' => __('Service name', 'scn-membership'),
+                'serviceDescription' => __('Short description (optional)', 'scn-membership'),
+                'removeService' => __('Remove', 'scn-membership'),
+                'videoPreview' => __('Video Preview', 'scn-membership'),
+                'videoThumbnail' => __('Video thumbnail', 'scn-membership'),
+            ],
+        ]);
+    }
+
+
+    public function registerMetaBoxesOnMenu() {
+        // Register meta boxes for scn_profile post type
+        if (post_type_exists('scn_profile')) {
+            add_meta_box(
+                'scn_profile_test',
+                __('SCN Profile Test', 'scn-membership'),
+                function($post) {
+                    echo '<p><strong>✅ SCN Profile meta boxes are working!</strong></p>';
+                    echo '<p>Post ID: ' . $post->ID . '</p>';
+                    echo '<p>Post Type: ' . $post->post_type . '</p>';
+                    echo '<p>This confirms the meta box system is functioning correctly.</p>';
+                },
+                'scn_profile',
+                'normal',
+                'high'
+            );
+
+            add_meta_box(
+                'scn_profile_basic_info',
+                __('Basic Information', 'scn-membership'),
+                [$this, 'renderBasicInfoMetaBox'],
+                'scn_profile',
+                'normal',
+                'high'
+            );
+
+            add_meta_box(
+                'scn_profile_gallery',
+                __('Photo Gallery', 'scn-membership'),
+                [$this, 'renderGalleryMetaBox'],
+                'scn_profile',
+                'normal',
+                'default'
+            );
+
+            add_meta_box(
+                'scn_profile_featured_video',
+                __('Featured Video', 'scn-membership'),
+                [$this, 'renderFeaturedVideoMetaBox'],
+                'scn_profile',
+                'normal',
+                'default'
+            );
+
+            add_meta_box(
+                'scn_profile_press_kit',
+                __('Press Kit / Speaker Packet', 'scn-membership'),
+                [$this, 'renderPressKitMetaBox'],
+                'scn_profile',
+                'normal',
+                'default'
+            );
+
+            add_meta_box(
+                'scn_profile_services',
+                __('Services Offered', 'scn-membership'),
+                [$this, 'renderServicesMetaBox'],
+                'scn_profile',
+                'side',
+                'default'
+            );
+
+            add_meta_box(
+                'scn_profile_badges',
+                __('Badges & Recognition', 'scn-membership'),
+                [$this, 'renderBadgesMetaBox'],
+                'scn_profile',
+                'side',
+                'default'
+            );
+        }
     }
 }
 

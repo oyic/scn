@@ -1,0 +1,259 @@
+/* Events Admin Styles */
+
+.scn-aliases-container,
+.scn-locks-container,
+.scn-merge-container {
+    max-width: 1200px;
+}
+
+.scn-event-selector {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.scn-search-events {
+    position: relative;
+}
+
+.scn-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.scn-search-results:not(:empty) {
+    display: block;
+}
+
+.scn-search-result-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.scn-search-result-item:hover {
+    background: #f0f0f0;
+}
+
+.scn-search-result-item:last-child {
+    border-bottom: none;
+}
+
+.scn-aliases-management,
+.scn-locks-management {
+    margin-top: 30px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.scn-selected-event {
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 4px;
+}
+
+.scn-add-alias-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.scn-add-alias-form input {
+    flex: 1;
+}
+
+.scn-aliases-list {
+    min-height: 100px;
+}
+
+.scn-alias-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 5px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.scn-alias-text {
+    font-weight: 500;
+}
+
+.scn-locks-list {
+    min-height: 100px;
+}
+
+.scn-lock-item {
+    padding: 10px;
+    margin-bottom: 5px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.scn-lock-item label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.scn-lock-info {
+    font-size: 12px;
+    color: #666;
+    font-style: italic;
+}
+
+.scn-merge-step {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.scn-selected-events-list,
+.scn-selected-event-display {
+    min-height: 60px;
+    padding: 10px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.scn-selected-event-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    margin-bottom: 5px;
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 4px;
+}
+
+.scn-merge-preview {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.scn-preview-section {
+    margin-bottom: 20px;
+}
+
+.scn-preview-section h4 {
+    margin-top: 0;
+    color: #333;
+}
+
+.scn-preview-section ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.scn-warnings {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.scn-merge-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.scn-merge-results {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.scn-error {
+    color: #d63384;
+    font-weight: 500;
+}
+
+.scn-loading {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .scn-add-alias-form {
+        flex-direction: column;
+    }
+    
+    .scn-merge-actions {
+        flex-direction: column;
+    }
+    
+    .scn-selected-event-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+
+/* Accessibility Improvements */
+.scn-search-result-item:focus,
+.scn-alias-item:focus,
+.scn-lock-item:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+.scn-field-lock-toggle:focus {
+    outline: 2px solid #0073aa;
+    outline-offset: 2px;
+}
+
+/* Loading States */
+.scn-loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #0073aa;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+
+
+
+
+

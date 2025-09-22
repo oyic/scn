@@ -10,7 +10,7 @@ class Plugin {
     }
 
     public function register() {
-        add_action('plugins_loaded', [$this, 'registerModules']);
+        add_action('init', [$this, 'registerModules']);
     }
 
     private function initializeModules() {
