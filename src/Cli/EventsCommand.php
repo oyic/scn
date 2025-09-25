@@ -205,5 +205,3 @@ class EventsCommand extends WP_CLI_Command {
 
 
 
-
-

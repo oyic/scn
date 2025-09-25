@@ -151,6 +151,62 @@
     color: white;
 }
 
+/* Prevent overflow issues */
+.scn-outcome-item {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.scn-outcome-item input[type="text"] {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Validation message styling */
+.scn-validation-error {
+    color: #d63638;
+    font-size: 13px;
+    margin-top: 5px;
+    display: block;
+    padding: 8px 12px;
+    background: #fef7f7;
+    border: 1px solid #d63638;
+    border-radius: 4px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.scn-validation-error:before {
+    content: "⚠ ";
+    font-weight: bold;
+}
+
+.scn-field-error {
+    border-color: #d63638 !important;
+    box-shadow: 0 0 0 1px #d63638 !important;
+}
+
+.scn-field-error:focus {
+    border-color: #d63638 !important;
+    box-shadow: 0 0 0 1px #d63638 !important;
+}
+
+/* Form table improvements */
+.form-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.form-table th {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.form-table td {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
 /* Responsive admin styles */
 @media (max-width: 782px) {
     .scn-outcome-item {

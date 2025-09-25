@@ -4,8 +4,9 @@ namespace SCN\Membership\Modules\Courses;
 
 class AdminInterface {
     public function register() {
-        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
-        add_action('admin_init', [$this, 'addImageUploaderScript']);
+        // Scripts are now handled by AdminService to prevent conflicts
+        // add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+        // add_action('admin_init', [$this, 'addImageUploaderScript']);
     }
 
     public function enqueueAdminScripts($hook) {

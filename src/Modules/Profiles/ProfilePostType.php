@@ -7,11 +7,16 @@ class ProfilePostType {
         add_action('init', [$this, 'registerPostType']);
         add_action('init', [$this, 'registerMetaFields']);
         add_action('add_meta_boxes', [$this, 'addMetaBoxes']);
-        add_action('save_post', [$this, 'saveMetaFields']);
-        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+        add_action('save_post_scn_profile', [$this, 'saveMetaFields']);
         
-        // Also register meta boxes on admin_menu to ensure they're added
-        add_action('admin_menu', [$this, 'registerMetaBoxesOnMenu']);
+        // Add custom columns to profiles list table
+        add_filter('manage_scn_profile_posts_columns', [$this, 'addCustomColumns'], 20);
+        add_action('manage_scn_profile_posts_custom_column', [$this, 'displayCustomColumns'], 10, 2);
+        add_filter('manage_edit-scn_profile_sortable_columns', [$this, 'makeSortableColumns']);
+        add_action('pre_get_posts', [$this, 'handleCustomSorting']);
+        
+        // Scripts are now handled by AdminService to prevent conflicts
+        // add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
     }
 
     public function registerPostType() {
@@ -33,7 +38,7 @@ class ProfilePostType {
                 'public' => true,
                 'has_archive' => true,
                 'rewrite' => ['slug' => 'profiles'],
-                'supports' => ['title', 'editor', 'thumbnail'],
+                'supports' => ['thumbnail'],
                 'capability_type' => 'scn_profile',
                 'map_meta_cap' => true,
                 'show_in_rest' => true,
@@ -101,20 +106,30 @@ class ProfilePostType {
     }
 
     public function addMetaBoxes($post) {
+        // Handle both post object and post type string parameters
+        $post_type = '';
+        if (is_object($post) && isset($post->post_type)) {
+            $post_type = $post->post_type;
+        } elseif (is_string($post)) {
+            $post_type = $post;
+        } else {
+            global $post_type;
+        }
+        
         // Only add meta boxes for scn_profile post type
-        if (!$post || $post->post_type !== 'scn_profile') {
+        if ($post_type !== 'scn_profile') {
             return;
         }
 
-        // Add a test meta box first to verify the system is working
+        // Add debug meta box to test if this method is being called
         add_meta_box(
-            'scn_profile_test',
-            __('SCN Profile Test', 'scn-membership'),
+            'scn_profile_debug',
+            __('SCN Profile Debug', 'scn-membership'),
             function($post) {
-                echo '<p><strong>✅ SCN Profile meta boxes are working!</strong></p>';
+                echo '<p><strong>✅ ProfilePostType::addMetaBoxes() is working!</strong></p>';
                 echo '<p>Post ID: ' . $post->ID . '</p>';
                 echo '<p>Post Type: ' . $post->post_type . '</p>';
-                echo '<p>This confirms the meta box system is functioning correctly.</p>';
+                echo '<p>This confirms the ProfilePostType meta box system is functioning correctly.</p>';
             },
             'scn_profile',
             'normal',
@@ -136,7 +151,7 @@ class ProfilePostType {
             [$this, 'renderGalleryMetaBox'],
             'scn_profile',
             'normal',
-            'default'
+            'high'
         );
 
         add_meta_box(
@@ -145,7 +160,7 @@ class ProfilePostType {
             [$this, 'renderFeaturedVideoMetaBox'],
             'scn_profile',
             'normal',
-            'default'
+            'high'
         );
 
         add_meta_box(
@@ -154,7 +169,7 @@ class ProfilePostType {
             [$this, 'renderPressKitMetaBox'],
             'scn_profile',
             'normal',
-            'default'
+            'high'
         );
 
         add_meta_box(
@@ -162,8 +177,8 @@ class ProfilePostType {
             __('Services Offered', 'scn-membership'),
             [$this, 'renderServicesMetaBox'],
             'scn_profile',
-            'side',
-            'default'
+            'normal',
+            'high'
         );
 
         add_meta_box(
@@ -171,8 +186,8 @@ class ProfilePostType {
             __('Badges & Recognition', 'scn-membership'),
             [$this, 'renderBadgesMetaBox'],
             'scn_profile',
-            'side',
-            'default'
+            'normal',
+            'high'
         );
     }
 
@@ -615,77 +630,74 @@ class ProfilePostType {
         ]);
     }
 
+    public function addCustomColumns($columns) {
+        // Remove the default featured image column to avoid duplication
+        unset($columns['featured_image']);
+        
+        // Also remove any other image-related columns that might exist
+        unset($columns['thumbnail']);
+        
+        // Insert our custom image column after title
+        $new_columns = [];
+        foreach ($columns as $key => $value) {
+            $new_columns[$key] = $value;
+            if ($key === 'title') {
+                $new_columns['featured_image'] = __('Image', 'scn-membership');
+            }
+        }
+        
+        // Debug: Log what columns we're working with
+        error_log('SCN Profile Columns: ' . print_r(array_keys($new_columns), true));
+        
+        return $new_columns;
+    }
 
-    public function registerMetaBoxesOnMenu() {
-        // Register meta boxes for scn_profile post type
-        if (post_type_exists('scn_profile')) {
-            add_meta_box(
-                'scn_profile_test',
-                __('SCN Profile Test', 'scn-membership'),
-                function($post) {
-                    echo '<p><strong>✅ SCN Profile meta boxes are working!</strong></p>';
-                    echo '<p>Post ID: ' . $post->ID . '</p>';
-                    echo '<p>Post Type: ' . $post->post_type . '</p>';
-                    echo '<p>This confirms the meta box system is functioning correctly.</p>';
-                },
-                'scn_profile',
-                'normal',
-                'high'
-            );
+    public function displayCustomColumns($column, $post_id) {
+        // Debug: Log what column is being displayed
+        error_log('SCN Profile Display Column: ' . $column . ' for post_id: ' . $post_id);
+        
+        // Prevent duplicate output with static flag
+        static $displayed = [];
+        $key = $post_id . '_' . $column;
+        
+        if (isset($displayed[$key])) {
+            error_log('SCN Profile: Preventing duplicate display for ' . $key);
+            return;
+        }
+        
+        $displayed[$key] = true;
+        
+        switch ($column) {
+            case 'featured_image':
+                $image_id = get_post_thumbnail_id($post_id);
+                if ($image_id) {
+                    $image = wp_get_attachment_image($image_id, [50, 50], false, [
+                        'style' => 'max-width: 50px; height: auto; border-radius: 4px;'
+                    ]);
+                    echo $image;
+                } else {
+                    echo '<span style="color: #999; font-style: italic;">No image</span>';
+                }
+                break;
+        }
+    }
 
-            add_meta_box(
-                'scn_profile_basic_info',
-                __('Basic Information', 'scn-membership'),
-                [$this, 'renderBasicInfoMetaBox'],
-                'scn_profile',
-                'normal',
-                'high'
-            );
+    public function makeSortableColumns($columns) {
+        // Make featured image column sortable by thumbnail ID
+        $columns['featured_image'] = '_thumbnail_id';
+        return $columns;
+    }
 
-            add_meta_box(
-                'scn_profile_gallery',
-                __('Photo Gallery', 'scn-membership'),
-                [$this, 'renderGalleryMetaBox'],
-                'scn_profile',
-                'normal',
-                'default'
-            );
+    public function handleCustomSorting($query) {
+        if (!is_admin() || !$query->is_main_query()) {
+            return;
+        }
 
-            add_meta_box(
-                'scn_profile_featured_video',
-                __('Featured Video', 'scn-membership'),
-                [$this, 'renderFeaturedVideoMetaBox'],
-                'scn_profile',
-                'normal',
-                'default'
-            );
-
-            add_meta_box(
-                'scn_profile_press_kit',
-                __('Press Kit / Speaker Packet', 'scn-membership'),
-                [$this, 'renderPressKitMetaBox'],
-                'scn_profile',
-                'normal',
-                'default'
-            );
-
-            add_meta_box(
-                'scn_profile_services',
-                __('Services Offered', 'scn-membership'),
-                [$this, 'renderServicesMetaBox'],
-                'scn_profile',
-                'side',
-                'default'
-            );
-
-            add_meta_box(
-                'scn_profile_badges',
-                __('Badges & Recognition', 'scn-membership'),
-                [$this, 'renderBadgesMetaBox'],
-                'scn_profile',
-                'side',
-                'default'
-            );
+        $orderby = $query->get('orderby');
+        
+        if ('_thumbnail_id' === $orderby) {
+            $query->set('meta_key', '_thumbnail_id');
+            $query->set('orderby', 'meta_value_num');
         }
     }
 }

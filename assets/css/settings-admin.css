@@ -1,0 +1,323 @@
+/**
+ * Settings Admin Styles
+ * 
+ * @package SCN_Membership
+ */
+
+.scn-settings-page {
+    max-width: 1200px;
+    background: #fff;
+    color: #23282d;
+}
+
+.scn-settings-header {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.scn-settings-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.scn-settings-actions .button {
+    margin: 0;
+}
+
+.scn-settings-tabs {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    margin: 20px 0;
+}
+
+.scn-settings-tabs .nav-tab-wrapper {
+    margin: 0;
+    border-bottom: 1px solid #ccd0d4;
+    background: #f9f9f9;
+    border-radius: 4px 4px 0 0;
+}
+
+.scn-settings-tabs .nav-tab {
+    border: none;
+    background: transparent;
+    color: #23282d;
+    font-weight: 500;
+    padding: 12px 20px;
+    margin: 0;
+    border-radius: 0;
+    transition: all 0.3s ease;
+}
+
+.scn-settings-tabs .nav-tab:hover {
+    background: #fff;
+    color: #0073aa;
+}
+
+.scn-settings-tabs .nav-tab.nav-tab-active {
+    background: #fff;
+    color: #0073aa;
+    border-bottom: 2px solid #0073aa;
+    margin-bottom: -1px;
+}
+
+.scn-settings-content {
+    padding: 0;
+}
+
+.scn-settings-tab-content {
+    display: none;
+    padding: 30px;
+}
+
+.scn-settings-tab-content.active {
+    display: block;
+}
+
+.scn-settings-tab-content h2 {
+    margin-top: 0;
+    color: #23282d;
+    font-size: 1.3em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.scn-settings-tab-content h3 {
+    color: #23282d;
+    font-size: 1.1em;
+    margin: 25px 0 15px 0;
+}
+
+.scn-settings-tab-content .form-table {
+    margin: 0;
+}
+
+.scn-settings-tab-content .form-table th {
+    width: 200px;
+    padding: 20px 10px 20px 0;
+    vertical-align: top;
+    font-weight: 600;
+    color: #23282d;
+    background: #fff;
+}
+
+.scn-settings-tab-content .form-table td {
+    padding: 20px 10px;
+    vertical-align: top;
+    background: #fff;
+}
+
+.scn-settings-tab-content .form-table .description {
+    margin-top: 5px;
+    color: #666;
+    font-style: italic;
+}
+
+.scn-settings-tab-content .form-table .code {
+    font-family: 'Courier New', Courier, monospace;
+    background: #f1f1f1;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.scn-settings-tab-content .regular-text {
+    width: 400px;
+}
+
+.scn-settings-tab-content .large-text {
+    width: 100%;
+    max-width: 600px;
+}
+
+.scn-settings-tab-content .small-text {
+    width: 80px;
+}
+
+.scn-settings-tab-content fieldset {
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+.scn-settings-tab-content fieldset label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: normal;
+}
+
+.scn-settings-tab-content fieldset input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.scn-settings-tab-content .media-upload-container {
+    margin-top: 10px;
+}
+
+.scn-settings-tab-content .media-upload-container img {
+    max-width: 150px;
+    height: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.scn-settings-tab-content .media-upload-container .no-media {
+    color: #666;
+    font-style: italic;
+    margin: 10px 0;
+}
+
+.scn-settings-tab-content .media-upload-container .select-media,
+.scn-settings-tab-content .media-upload-container .remove-media {
+    margin-right: 10px;
+}
+
+.scn-settings-footer {
+    background: #f9f9f9;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: right;
+}
+
+.scn-settings-footer .button {
+    margin-left: 10px;
+}
+
+/* Modal Styles */
+.scn-modal {
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.scn-modal-content {
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90%;
+    overflow-y: auto;
+    color: #23282d;
+}
+
+.scn-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.scn-modal-header h3 {
+    margin: 0;
+    color: #23282d;
+}
+
+.scn-modal-close {
+    font-size: 24px;
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.scn-modal-close:hover {
+    color: #000;
+}
+
+.scn-modal-body {
+    padding: 20px;
+}
+
+.scn-modal-footer {
+    padding: 20px;
+    border-top: 1px solid #eee;
+    text-align: right;
+}
+
+.scn-modal-footer .button {
+    margin-left: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .scn-settings-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .scn-settings-actions .button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .scn-settings-tabs .nav-tab {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    
+    .scn-settings-tab-content {
+        padding: 20px;
+    }
+    
+    .scn-settings-tab-content .form-table th,
+    .scn-settings-tab-content .form-table td {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+    }
+    
+    .scn-settings-tab-content .form-table th {
+        border-bottom: none;
+        padding-bottom: 5px;
+    }
+    
+    .scn-settings-tab-content .regular-text,
+    .scn-settings-tab-content .large-text {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+/* Dark Mode Support - Disabled for conventional white theme */
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .scn-settings-tabs .nav-tab {
+        border: 2px solid transparent;
+    }
+    
+    .scn-settings-tabs .nav-tab:hover,
+    .scn-settings-tabs .nav-tab.nav-tab-active {
+        border-color: #000;
+        background: #ffff00;
+        color: #000;
+    }
+    
+    .scn-settings-tab-content .form-table th {
+        font-weight: bold;
+    }
+    
+    .scn-settings-tab-content fieldset label {
+        font-weight: bold;
+    }
+}

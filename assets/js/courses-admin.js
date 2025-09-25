@@ -98,13 +98,17 @@ jQuery(document).ready(function($) {
     
     // Form validation
     $('form#post').on('submit', function(e) {
+        clearValidationErrors();
         const errors = [];
         
         // Validate CE hours when enabled
         if ($('#scn_course_ce_enabled').is(':checked')) {
             const ceHours = parseFloat($('#scn_course_ce_hours').val());
             if (isNaN(ceHours) || ceHours < 0.5) {
-                errors.push(scnCoursesAdmin.ceHoursError);
+                errors.push({
+                    field: '#scn_course_ce_hours',
+                    message: scnCoursesAdmin.ceHoursError
+                });
             }
         }
         
@@ -118,21 +122,55 @@ jQuery(document).ready(function($) {
         });
         
         if (outcomes.length === 0) {
-            errors.push(scnCoursesAdmin.outcomesError);
+            errors.push({
+                field: '#scn-outcomes-container',
+                message: scnCoursesAdmin.outcomesError
+            });
         }
         
         // Validate on-demand link if provided
         const ondemandLink = $('#scn_ondemand_link').val().trim();
         if (ondemandLink && !isValidUrl(ondemandLink)) {
-            errors.push(scnCoursesAdmin.linkError);
+            errors.push({
+                field: '#scn_ondemand_link',
+                message: scnCoursesAdmin.linkError
+            });
         }
         
         if (errors.length > 0) {
             e.preventDefault();
-            alert(errors.join('\n'));
+            e.stopPropagation();
+            showValidationErrors(errors);
             return false;
         }
     });
+    
+    function clearValidationErrors() {
+        $('.scn-validation-error').remove();
+        $('.scn-field-error').removeClass('scn-field-error');
+    }
+    
+    function showValidationErrors(errors) {
+        errors.forEach(function(error) {
+            const $field = $(error.field);
+            const $errorDiv = $('<div class="scn-validation-error">' + error.message + '</div>');
+            
+            if ($field.length) {
+                $field.addClass('scn-field-error');
+                $field.after($errorDiv);
+            } else {
+                // If field not found, show at top of form
+                $('form#post').prepend($errorDiv);
+            }
+        });
+        
+        // Scroll to first error
+        if (errors.length > 0) {
+            $('html, body').animate({
+                scrollTop: $('.scn-validation-error').first().offset().top - 100
+            }, 500);
+        }
+    }
     
     function isValidUrl(string) {
         try {

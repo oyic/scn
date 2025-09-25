@@ -50,5 +50,3 @@ function scn_event_search_template($query) {
 
 
 
-
-

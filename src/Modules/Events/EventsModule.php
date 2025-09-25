@@ -9,6 +9,10 @@ class EventsModule {
     private $merge_service;
     private $search_service;
     private $rest_controller;
+    private $sessions_service;
+    private $session_approval_service;
+    private $event_year_pages;
+    private $homepage_widget;
 
     public function register() {
         $this->post_type = new EventPostType();
@@ -17,12 +21,21 @@ class EventsModule {
         $this->merge_service = new MergeService();
         $this->search_service = new EventsSearchService();
         $this->rest_controller = new EventsRestController();
+        $this->sessions_service = new SessionsService();
+        $this->session_approval_service = new SessionApprovalService();
+        $this->event_year_pages = new EventYearPages();
+        $this->homepage_widget = new HomepageWidget();
+        
         $this->post_type->register();
         $this->aliases_service->register();
         $this->locks_service->register();
         $this->merge_service->register();
         $this->search_service->register();
         $this->rest_controller->register();
+        $this->sessions_service->register();
+        $this->session_approval_service->register();
+        $this->event_year_pages->register();
+        $this->homepage_widget->register();
 
         add_action('init', [$this, 'init']);
         add_action('init', [$this, 'addCapabilities']);
@@ -40,6 +53,8 @@ class EventsModule {
                 'manage_scn_events',
                 'merge_scn_events',
                 'lock_scn_events',
+                'manage_scn_sessions',
+                'approve_scn_sessions',
             ];
 
             foreach ($capabilities as $cap) {
@@ -49,7 +64,20 @@ class EventsModule {
 
         $editor_role = \get_role('editor');
         if ($editor_role) {
-            $editor_role->add_cap('manage_scn_events');
+            $editor_capabilities = [
+                'manage_scn_events',
+                'manage_scn_sessions',
+                'approve_scn_sessions',
+            ];
+            
+            foreach ($editor_capabilities as $cap) {
+                $editor_role->add_cap($cap);
+            }
+        }
+
+        $author_role = \get_role('author');
+        if ($author_role) {
+            $author_role->add_cap('create_scn_sessions');
         }
 
         $merge_cap = apply_filters('scn/events/merge_capability', 'merge_scn_events');

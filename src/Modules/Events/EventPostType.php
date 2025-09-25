@@ -7,8 +7,17 @@ class EventPostType {
         add_action('init', [$this, 'registerPostType']);
         add_action('init', [$this, 'registerMetaFields']);
         add_action('add_meta_boxes', [$this, 'addMetaBoxes']);
-        add_action('save_post', [$this, 'saveMetaFields']);
-        add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+        // Save method is now handled by bootstrap to prevent conflicts
+        // add_action('save_post_scn_event', [$this, 'saveMetaFields']);
+        
+        // Add custom columns to events list table
+        add_filter('manage_scn_event_posts_columns', [$this, 'addCustomColumns'], 20);
+        add_action('manage_scn_event_posts_custom_column', [$this, 'displayCustomColumns'], 10, 2);
+        add_filter('manage_edit-scn_event_sortable_columns', [$this, 'makeSortableColumns']);
+        add_action('pre_get_posts', [$this, 'handleCustomSorting']);
+        
+        // Scripts are now handled by AdminService to prevent conflicts
+        // add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
     }
 
     public function registerPostType() {
@@ -30,7 +39,7 @@ class EventPostType {
                 'public' => false,
                 'show_ui' => true,
                 'show_in_menu' => false, // We'll add it to our custom menu
-                'supports' => ['title', 'editor'],
+                'supports' => ['thumbnail'],
                 'capability_type' => 'scn_event',
                 'map_meta_cap' => true,
                 'show_in_rest' => true,
@@ -73,15 +82,31 @@ class EventPostType {
             'show_in_rest' => true,
             'sanitize_callback' => [$this, 'sanitizeLockedFields'],
         ]);
+
+        register_meta('post', 'scn_event_name', [
+            'type' => 'string',
+            'single' => true,
+            'show_in_rest' => true,
+            'sanitize_callback' => 'sanitize_text_field',
+        ]);
     }
 
     public function addMetaBoxes() {
+        add_meta_box(
+            'scn_event_basic_info',
+            __('Event Information', 'scn-membership'),
+            [$this, 'renderBasicInfoMetaBox'],
+            'scn_event',
+            'normal',
+            'high'
+        );
+
         add_meta_box(
             'scn_event_location',
             __('Location', 'scn-membership'),
             [$this, 'renderLocationMetaBox'],
             'scn_event',
-            'side',
+            'normal',
             'high'
         );
 
@@ -90,7 +115,7 @@ class EventPostType {
             __('Event Dates', 'scn-membership'),
             [$this, 'renderDatesMetaBox'],
             'scn_event',
-            'side',
+            'normal',
             'high'
         );
 
@@ -99,8 +124,8 @@ class EventPostType {
             __('Event Website', 'scn-membership'),
             [$this, 'renderWebsiteMetaBox'],
             'scn_event',
-            'side',
-            'default'
+            'normal',
+            'high'
         );
 
         add_meta_box(
@@ -108,8 +133,8 @@ class EventPostType {
             __('Event Year', 'scn-membership'),
             [$this, 'renderYearMetaBox'],
             'scn_event',
-            'side',
-            'default'
+            'normal',
+            'high'
         );
     }
 
@@ -161,6 +186,32 @@ class EventPostType {
                            class="regular-text" 
                            <?php disabled(in_array('location_country', $locked_fields)); ?> />
                     <?php if (in_array('location_country', $locked_fields)): ?>
+                        <p class="description"><?php _e('This field is locked.', 'scn-membership'); ?></p>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    public function renderBasicInfoMetaBox($post) {
+        wp_nonce_field('scn_event_meta', 'scn_event_meta_nonce');
+        
+        $event_name = get_post_meta($post->ID, 'scn_event_name', true);
+        $locked_fields = get_post_meta($post->ID, 'scn_event_locked_fields', true) ?: [];
+
+        ?>
+        <table class="form-table">
+            <tr>
+                <th><label for="scn_event_name"><?php _e('Event Name', 'scn-membership'); ?></label></th>
+                <td>
+                    <input type="text" 
+                           id="scn_event_name" 
+                           name="scn_event_name" 
+                           value="<?php echo esc_attr($event_name); ?>" 
+                           class="regular-text"
+                           <?php disabled(in_array('official_name', $locked_fields)); ?> />
+                    <?php if (in_array('official_name', $locked_fields)): ?>
                         <p class="description"><?php _e('This field is locked.', 'scn-membership'); ?></p>
                     <?php endif; ?>
                 </td>
@@ -270,8 +321,20 @@ class EventPostType {
 
         $locked_fields = get_post_meta($post_id, 'scn_event_locked_fields', true) ?: [];
 
+        // Save event name
+        if (isset($_POST['scn_event_name'])) {
+            update_post_meta($post_id, 'scn_event_name', sanitize_text_field($_POST['scn_event_name']));
+        }
+
         if (!in_array('official_name', $locked_fields)) {
-            $official_name = sanitize_text_field($_POST['post_title'] ?? '');
+            // Get official name from event name field instead of post_title
+            $official_name = '';
+            if (isset($_POST['scn_event_name'])) {
+                $official_name = sanitize_text_field($_POST['scn_event_name']);
+            } else {
+                // Fallback to post title if event name not available
+                $official_name = sanitize_text_field($_POST['post_title'] ?? '');
+            }
             update_post_meta($post_id, 'scn_event_official_name', $official_name);
         }
 
@@ -367,5 +430,69 @@ class EventPostType {
         }
 
         return $normalized_url;
+    }
+
+    public function addCustomColumns($columns) {
+        // Remove the default featured image column to avoid duplication
+        unset($columns['featured_image']);
+        
+        // Also remove any other image-related columns that might exist
+        unset($columns['thumbnail']);
+        
+        // Insert our custom image column after title
+        $new_columns = [];
+        foreach ($columns as $key => $value) {
+            $new_columns[$key] = $value;
+            if ($key === 'title') {
+                $new_columns['featured_image'] = __('Image', 'scn-membership');
+            }
+        }
+        
+        return $new_columns;
+    }
+
+    public function displayCustomColumns($column, $post_id) {
+        // Prevent duplicate output with static flag
+        static $displayed = [];
+        $key = $post_id . '_' . $column;
+        
+        if (isset($displayed[$key])) {
+            return;
+        }
+        
+        $displayed[$key] = true;
+        
+        switch ($column) {
+            case 'featured_image':
+                $image_id = get_post_thumbnail_id($post_id);
+                if ($image_id) {
+                    $image = wp_get_attachment_image($image_id, [50, 50], false, [
+                        'style' => 'max-width: 50px; height: auto; border-radius: 4px;'
+                    ]);
+                    echo $image;
+                } else {
+                    echo '<span style="color: #999; font-style: italic;">No image</span>';
+                }
+                break;
+        }
+    }
+
+    public function makeSortableColumns($columns) {
+        // Make featured image column sortable by thumbnail ID
+        $columns['featured_image'] = '_thumbnail_id';
+        return $columns;
+    }
+
+    public function handleCustomSorting($query) {
+        if (!is_admin() || !$query->is_main_query()) {
+            return;
+        }
+
+        $orderby = $query->get('orderby');
+        
+        if ('_thumbnail_id' === $orderby) {
+            $query->set('meta_key', '_thumbnail_id');
+            $query->set('orderby', 'meta_value_num');
+        }
     }
 }
