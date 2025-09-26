@@ -8,6 +8,7 @@ class ProfilesModule {
     private $video_processor;
     private $admin_interface;
     private $frontend_templates;
+    private $dashboard;
 
     public function register() {
         $this->post_type = new ProfilePostType();
@@ -15,6 +16,7 @@ class ProfilesModule {
         $this->video_processor = new VideoProcessor();
         $this->admin_interface = new AdminInterface();
         $this->frontend_templates = new FrontendTemplates();
+        $this->dashboard = new ProfileDashboard();
 
         // Register components immediately
         $this->post_type->register();
@@ -22,6 +24,7 @@ class ProfilesModule {
         $this->video_processor->register();
         $this->admin_interface->register();
         $this->frontend_templates->register();
+        $this->dashboard->register();
 
         // Register hooks
         add_action('init', [$this, 'init']);

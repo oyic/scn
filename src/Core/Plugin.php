@@ -15,6 +15,7 @@ class Plugin {
 
     private function initializeModules() {
         $this->modules = [
+            'auth' => new \SCN\Membership\Modules\Auth\AuthModule(),
             'profiles' => new \SCN\Membership\Modules\Profiles\ProfilesModule(),
             'courses' => new \SCN\Membership\Modules\Courses\CoursesModule(),
             'events' => new \SCN\Membership\Modules\Events\EventsModule(),

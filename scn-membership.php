@@ -74,6 +74,7 @@ class SCN_Membership_Bootstrap {
             $this->plugin = new SCN\Membership\Core\Plugin();
             $this->plugin->register();
         }
+        // $this->ensureRewriteRules(); // Disabled - using pages instead
     }
 
     public function activate() {
@@ -192,6 +193,73 @@ class SCN_Membership_Bootstrap {
 
     private function flushRewriteRules() {
         flush_rewrite_rules();
+    }
+
+    private function ensureRewriteRules() {
+        // Ensure authentication rewrite rules are registered
+        add_rewrite_rule(
+            '^member-login/?$',
+            'index.php?scn_member_login=1',
+            'top'
+        );
+        
+        add_rewrite_rule(
+            '^member-register/?$',
+            'index.php?scn_member_register=1',
+            'top'
+        );
+        
+        add_rewrite_rule(
+            '^member-dashboard/?$',
+            'index.php?scn_member_dashboard=1',
+            'top'
+        );
+        
+        add_rewrite_rule(
+            '^member-logout/?$',
+            'index.php?scn_member_logout=1',
+            'top'
+        );
+        
+        add_rewrite_rule(
+            '^test-auth/?$',
+            'index.php?scn_test_auth=1',
+            'top'
+        );
+        
+        // Add query vars
+        add_filter('query_vars', function($vars) {
+            $vars[] = 'scn_member_login';
+            $vars[] = 'scn_member_register';
+            $vars[] = 'scn_member_dashboard';
+            $vars[] = 'scn_member_logout';
+            $vars[] = 'scn_test_auth';
+            return $vars;
+        });
+        
+        // Handle template inclusion
+        add_filter('template_include', function($template) {
+            if (get_query_var('scn_member_login')) {
+                return SCN_MEMBERSHIP_PATH . 'templates/auth/member-login.php';
+            }
+            if (get_query_var('scn_member_register')) {
+                return SCN_MEMBERSHIP_PATH . 'templates/auth/member-register.php';
+            }
+        if (get_query_var('scn_member_dashboard')) {
+            return SCN_MEMBERSHIP_PATH . 'templates/profiles/profile-dashboard-fixed.php';
+        }
+            if (get_query_var('scn_member_logout')) {
+                if (is_user_logged_in()) {
+                    wp_logout();
+                }
+                wp_redirect(home_url('/member-login/'));
+                exit;
+            }
+            if (get_query_var('scn_test_auth')) {
+                return SCN_MEMBERSHIP_PATH . 'templates/auth/test-auth.php';
+            }
+            return $template;
+        });
     }
 
     private function setActivationFlag() {
