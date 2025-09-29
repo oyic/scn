@@ -87,13 +87,33 @@ if ($_POST && isset($_POST['scn_member_register'])) {
                 update_post_meta($profile_id, 'scn_last_name', $last_name);
                 update_post_meta($profile_id, 'scn_member_since', current_time('mysql'));
                 
-                // Auto-login user
-                wp_set_current_user($user_id);
-                wp_set_auth_cookie($user_id);
+                // Send email verification instead of auto-login
+                require_once plugin_dir_path(__FILE__) . '../../includes/email-confirmation.php';
+                $email_confirmation = new SCNEmailConfirmation();
+                $email_sent = $email_confirmation->sendConfirmationEmail($user_id, $email, $first_name);
                 
-                // Redirect to dashboard
-                wp_redirect(home_url('/member-dashboard/'));
-                exit;
+                if ($email_sent) {
+                    // Set success message and redirect to login with verification notice
+                    wp_redirect(add_query_arg('scn_success', 'registration_complete', home_url('/member-login/')));
+                    exit;
+                } else {
+                    // For development: if email fails, auto-verify the user
+                    if (defined('WP_DEBUG') && WP_DEBUG) {
+                        // Auto-verify user for development
+                        update_user_meta($user_id, 'scn_account_verified', true);
+                        update_user_meta($user_id, 'scn_verified_date', current_time('mysql'));
+                        
+                        // Auto-login user
+                        wp_set_current_user($user_id);
+                        wp_set_auth_cookie($user_id);
+                        
+                        // Redirect to dashboard
+                        wp_redirect(home_url('/member-dashboard/'));
+                        exit;
+                    } else {
+                        $errors[] = __('Account created but failed to send verification email. Please contact support.', 'scn-membership');
+                    }
+                }
             } else {
                 $errors[] = __('Failed to create profile. Please try again.', 'scn-membership');
             }

@@ -1,0 +1,131 @@
+/**
+ * Full Width Override for WordPress Themes
+ * This file overrides theme's global content size to make everything full width
+ */
+
+/* Override WordPress theme global content size variables */
+:root {
+    --wp--style--global--content-size: 100vw !important;
+    --wp--style--global--wide-size: 100vw !important;
+    --wp--style--global--content-size: 100% !important;
+    --wp--style--global--wide-size: 100% !important;
+}
+
+/* Force full width for all WordPress content containers */
+.wp-site-blocks,
+.wp-block-group,
+.wp-block-group__inner-container,
+.wp-block-cover,
+.wp-block-cover__inner-container,
+.entry-content,
+.entry-content > *,
+.alignwide,
+.alignfull,
+.wp-block-columns,
+.wp-block-column,
+.wp-block-group__inner-container,
+.wp-block-cover__inner-container {
+    max-width: 100vw !important;
+    width: 100% !important;
+}
+
+/* Override specific theme containers */
+.container,
+.wp-container,
+.content-area,
+.site-content,
+.main-content,
+.entry-content,
+.post-content,
+.page-content {
+    max-width: 100vw !important;
+    width: 100% !important;
+}
+
+/* Override Twenty Twenty Three theme */
+.twentytwentythree .wp-site-blocks,
+.twentytwentythree .wp-block-group,
+.twentytwentythree .wp-block-group__inner-container {
+    max-width: 100vw !important;
+    width: 100% !important;
+}
+
+/* Override Twenty Twenty Four theme */
+.twentytwentyfour .wp-site-blocks,
+.twentytwentyfour .wp-block-group,
+.twentytwentyfour .wp-block-group__inner-container {
+    max-width: 100vw !important;
+    width: 100% !important;
+}
+
+/* Override Twenty Twenty Five theme */
+.twentytwentyfive .wp-site-blocks,
+.twentytwentyfive .wp-block-group,
+.twentytwentyfive .wp-block-group__inner-container {
+    max-width: 100vw !important;
+    width: 100% !important;
+}
+
+/* Ensure SCN dashboard is always full width */
+.scn-dashboard-page,
+.scn-dashboard-container,
+.scn-dashboard-content {
+    max-width: 100vw !important;
+    width: 100% !important;
+}
+
+/* Override any theme-specific max-width constraints */
+*[style*="max-width"] {
+    max-width: 100vw !important;
+}
+
+/* Force full width for all block editor content */
+.wp-block {
+    max-width: 100vw !important;
+}
+
+/* Override theme.json layout settings */
+.wp-block-group__inner-container {
+    max-width: 100vw !important;
+    width: 100% !important;
+}
+
+/* Ensure proper spacing while maintaining full width */
+.wp-site-blocks {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Override any theme's content wrapper */
+.content-wrapper,
+.main-wrapper,
+.site-wrapper {
+    max-width: 100vw !important;
+    width: 100% !important;
+}
+
+/* Override global padding to 25px */
+.has-global-padding {
+    padding-right: 25px !important;
+    padding-left: 25px !important;
+}
+
+/* Center content */
+.wp-site-blocks,
+.wp-block-group,
+.wp-block-group__inner-container,
+.entry-content,
+.content-area,
+.site-content,
+.main-content {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center !important;
+}
+
+/* Center specific content elements */
+.scn-dashboard-container,
+.scn-dashboard-content {
+    margin-left: auto !important;
+    margin-right: auto !important;
+}

@@ -14,6 +14,7 @@ class AuthShortcodes
         add_shortcode('scn_member_login', [$this, 'renderLoginPage']);
         add_shortcode('scn_member_register', [$this, 'renderRegisterPage']);
         add_shortcode('scn_member_dashboard', [$this, 'renderDashboardPage']);
+        add_shortcode('scn_member_profile', [$this, 'renderMemberProfilePage']);
         add_shortcode('scn_test_auth', [$this, 'renderTestPage']);
     }
 
@@ -52,11 +53,145 @@ class AuthShortcodes
             return true;
         }
         
+        // Allow if we're in the WordPress admin (check URL)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/wp-admin/') !== false) {
+            return true;
+        }
+        
+        // Allow if we're in the post editor (check for post parameter)
+        if (isset($_GET['post']) && is_numeric($_GET['post'])) {
+            return true;
+        }
+        
+        // Allow if we're in the block editor (check for editor parameter)
+        if (isset($_GET['editor']) && $_GET['editor'] === 'block') {
+            return true;
+        }
+        
+        // Allow if we're in the classic editor
+        if (isset($_GET['classic-editor'])) {
+            return true;
+        }
+        
+        // Allow if we're in the post editor (check for action parameter)
+        if (isset($_GET['action']) && $_GET['action'] === 'edit') {
+            return true;
+        }
+        
+        // Allow if we're in the admin context (check current screen)
+        if (function_exists('get_current_screen')) {
+            $screen = get_current_screen();
+            if ($screen && $screen->is_admin()) {
+                return true;
+            }
+        }
+        
+        // Allow if we're in the admin context (check for admin-ajax)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'admin-ajax.php') !== false) {
+            return true;
+        }
+        
+        // Allow if we're in the admin context (check for admin-post)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'admin-post.php') !== false) {
+            return true;
+        }
+        
+        // Allow if we're in the admin context (check for admin.php)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'admin.php') !== false) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Check if we're in a backend context (admin, editor, etc.)
+     */
+    private function isBackendContext()
+    {
+        // Check if we're in admin area
+        if (is_admin()) {
+            return true;
+        }
+        
+        // Check if we're in preview mode
+        if (isset($_GET['preview']) && $_GET['preview'] === 'true') {
+            return true;
+        }
+        
+        // Check if we're editing a post/page
+        if (isset($_GET['post']) && isset($_GET['action']) && $_GET['action'] === 'edit') {
+            return true;
+        }
+        
+        // Check if we're in the post editor
+        if (isset($_GET['post_type']) && isset($_GET['page']) && $_GET['page'] === 'edit') {
+            return true;
+        }
+        
+        // Check if we're in the block editor
+        if (isset($_GET['post']) && isset($_GET['action']) && $_GET['action'] === 'edit' && isset($_GET['meta-box-loader'])) {
+            return true;
+        }
+        
+        // Check if we're in the WordPress admin (check URL)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/wp-admin/') !== false) {
+            return true;
+        }
+        
+        // Check if we're in the post editor (check for post parameter)
+        if (isset($_GET['post']) && is_numeric($_GET['post'])) {
+            return true;
+        }
+        
+        // Check if we're in the block editor (check for editor parameter)
+        if (isset($_GET['editor']) && $_GET['editor'] === 'block') {
+            return true;
+        }
+        
+        // Check if we're in the classic editor
+        if (isset($_GET['classic-editor'])) {
+            return true;
+        }
+        
+        // Check if we're in the post editor (check for action parameter)
+        if (isset($_GET['action']) && $_GET['action'] === 'edit') {
+            return true;
+        }
+        
+        // Check if we're in the admin context (check current screen)
+        if (function_exists('get_current_screen')) {
+            $screen = get_current_screen();
+            if ($screen && $screen->is_admin()) {
+                return true;
+            }
+        }
+        
+        // Check if we're in the admin context (check for admin-ajax)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'admin-ajax.php') !== false) {
+            return true;
+        }
+        
+        // Check if we're in the admin context (check for admin-post)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'admin-post.php') !== false) {
+            return true;
+        }
+        
+        // Check if we're in the admin context (check for admin.php)
+        if (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'admin.php') !== false) {
+            return true;
+        }
+        
         return false;
     }
 
     public function renderLoginPage($atts)
     {
+        // Don't render shortcode in admin/backend context
+        if (is_admin() || $this->isBackendContext()) {
+            return '';
+        }
+
         // Handle logout action
         if (isset($_GET['action']) && $_GET['action'] === 'logout') {
             // Clear WordPress user session if logged in
@@ -79,8 +214,8 @@ class AuthShortcodes
             exit;
         }
 
-        // Don't redirect if we're in admin, preview mode, or editing mode
-        if (is_user_logged_in() && !$this->shouldAllowAdminAccess()) {
+        // Redirect logged-in users to dashboard
+        if (is_user_logged_in()) {
             wp_redirect(home_url('/member-dashboard/'));
             exit;
         }
@@ -134,21 +269,31 @@ class AuthShortcodes
 
     public function renderRegisterPage($atts)
     {
-        // Don't redirect if we're in admin, preview mode, or editing mode
-        if (is_user_logged_in() && !$this->shouldAllowAdminAccess()) {
+        // Don't render shortcode in admin/backend context
+        if (is_admin() || $this->isBackendContext()) {
+            return '';
+        }
+
+        // Redirect logged-in users to dashboard
+        if (is_user_logged_in()) {
             wp_redirect(home_url('/member-dashboard/'));
             exit;
         }
 
         ob_start();
-        include SCN_MEMBERSHIP_PATH . 'templates/auth/member-register.php';
+        include SCN_MEMBERSHIP_PATH . 'templates/auth/member-register-enhanced.php';
         return ob_get_clean();
     }
 
     public function renderDashboardPage($atts)
     {
-        // Check if user is logged in (but allow admin/preview access)
-        if (!is_user_logged_in() && !$this->shouldAllowAdminAccess()) {
+        // Don't render shortcode in admin/backend context
+        if (is_admin() || $this->isBackendContext()) {
+            return '';
+        }
+
+        // Redirect non-logged-in users to login page
+        if (!is_user_logged_in()) {
             wp_redirect(home_url('/member-login/'));
             exit;
         }
@@ -158,8 +303,25 @@ class AuthShortcodes
         return ob_get_clean();
     }
 
+    public function renderMemberProfilePage($atts)
+    {
+        // Don't render shortcode in admin/backend context
+        if (is_admin() || $this->isBackendContext()) {
+            return '';
+        }
+
+        ob_start();
+        include SCN_MEMBERSHIP_PATH . 'templates/profiles/member-profile.php';
+        return ob_get_clean();
+    }
+
     public function renderTestPage($atts)
     {
+        // Don't render shortcode in admin/backend context
+        if (is_admin() || $this->isBackendContext()) {
+            return '';
+        }
+
         ob_start();
         include SCN_MEMBERSHIP_PATH . 'templates/auth/test-auth.php';
         return ob_get_clean();

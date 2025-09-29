@@ -61,6 +61,22 @@ class SCN_Membership_Bootstrap {
             $admin_service = new SCN\Membership\Admin\AdminService();
             $admin_service->register();
             
+            // Initialize email confirmation system
+            require_once SCN_MEMBERSHIP_PATH . 'includes/email-confirmation.php';
+            
+            // Initialize email debug system
+            require_once SCN_MEMBERSHIP_PATH . 'includes/email-debug.php';
+            
+            // Enqueue global full-width override CSS
+            add_action('wp_enqueue_scripts', [$this, 'enqueueGlobalStyles']);
+            
+            // Remove WordPress admin bar from frontend
+            add_action('init', [$this, 'removeAdminBar']);
+            
+            // Ensure sample topics exist
+            add_action('init', [$this, 'ensureSampleTopics'], 20);
+        add_action('init', [$this, 'createMembersProfilePage'], 30);
+            
             // Register WP-CLI commands
             if (defined('WP_CLI') && WP_CLI) {
                 \WP_CLI::add_command('scn events', 'SCN\\Membership\\Cli\\EventsCommand');
@@ -971,6 +987,97 @@ CSS;
             wp_add_inline_style('scn-event-admin-fixes', $css);
         });
     }
+    
+    public function enqueueGlobalStyles() {
+        wp_enqueue_style(
+            'scn-full-width-override',
+            SCN_MEMBERSHIP_URL . 'assets/css/full-width-override.css',
+            [],
+            SCN_MEMBERSHIP_VERSION
+        );
+        
+        // Add CSS to hide admin bar
+        wp_add_inline_style('scn-full-width-override', '
+            #wpadminbar { display: none !important; }
+            html { margin-top: 0 !important; }
+            body.admin-bar { padding-top: 0 !important; }
+        ');
+    }
+
+    public function removeAdminBar() {
+        // Remove admin bar for all users on frontend
+        add_filter('show_admin_bar', '__return_false');
+        
+        // Remove admin bar CSS and JS
+        remove_action('wp_head', '_admin_bar_bump_cb');
+        remove_action('wp_head', 'wp_admin_bar_header');
+        remove_action('wp_head', 'wp_admin_bar_render', 1000);
+        
+        // Additional admin bar removal
+        add_filter('show_admin_bar', '__return_false', 999);
+        
+        // Remove admin bar from body classes
+        add_filter('body_class', function($classes) {
+            return array_diff($classes, ['admin-bar']);
+        });
+    }
+
+    public function ensureSampleTopics() {
+        // Only run if no topics exist
+        $existing_topics = get_terms([
+            'taxonomy' => 'scn_topic',
+            'hide_empty' => false,
+            'number' => 1
+        ]);
+        
+        if (is_wp_error($existing_topics) || empty($existing_topics)) {
+            $sample_topics = [
+                'Leadership',
+                'Communication', 
+                'Project Management',
+                'Digital Marketing',
+                'Data Analysis',
+                'Public Speaking',
+                'Team Building',
+                'Strategic Planning',
+                'Customer Service',
+                'Innovation'
+            ];
+            
+            foreach ($sample_topics as $topic_name) {
+                wp_insert_term(
+                    $topic_name,
+                    'scn_topic',
+                    [
+                        'description' => "Course topic: {$topic_name}",
+                        'slug' => sanitize_title($topic_name)
+                    ]
+                );
+            }
+        }
+    }
+
+    public function createMembersProfilePage() {
+        // Check if the page already exists
+        $existing_page = get_page_by_path('members-profile');
+        
+        if (!$existing_page) {
+            // Create the members profile page
+            $page_id = wp_insert_post([
+                'post_title' => 'Members Profile',
+                'post_name' => 'members-profile',
+                'post_content' => '[scn_member_profile]',
+                'post_status' => 'publish',
+                'post_type' => 'page',
+                'post_author' => 1
+            ]);
+            
+            if ($page_id && !is_wp_error($page_id)) {
+                // Set page template if needed
+                update_post_meta($page_id, '_wp_page_template', 'default');
+            }
+        }
+    }
 }
 
 SCN_Membership_Bootstrap::getInstance();
@@ -1031,8 +1138,9 @@ function scn_membership_uninstall() {
         }
     }
 
-    flush_rewrite_rules();
+
+
 }
 
-
+SCN_Membership_Bootstrap::getInstance();
 

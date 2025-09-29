@@ -82,9 +82,55 @@ get_header();
                     Remember: <?php echo isset($_POST['rememberme']) ? 'Yes' : 'No'; ?><br>
                     <?php if (function_exists('is_user_logged_in') && is_user_logged_in()): ?>
                         Current User: <?php echo wp_get_current_user()->user_login; ?><br>
+                        <?php
+                        // Get profile information instead of just user info
+                        $user_id = get_current_user_id();
+                        $profile_posts = get_posts([
+                            'post_type' => 'scn_profile',
+                            'meta_query' => [
+                                [
+                                    'key' => 'scn_user_id',
+                                    'value' => $user_id,
+                                    'compare' => '='
+                                ]
+                            ],
+                            'posts_per_page' => 1,
+                            'post_status' => 'publish'
+                        ]);
+                        
+                        if (!empty($profile_posts)) {
+                            $profile = $profile_posts[0];
+                            $first_name = get_post_meta($profile->ID, 'scn_first_name', true);
+                            $last_name = get_post_meta($profile->ID, 'scn_last_name', true);
+                            $credentials = get_post_meta($profile->ID, 'scn_credentials', true);
+                            $location = get_post_meta($profile->ID, 'scn_location', true);
+                            
+                            echo "Profile Name: " . esc_html(trim($first_name . ' ' . $last_name)) . "<br>";
+                            if ($credentials) echo "Credentials: " . esc_html($credentials) . "<br>";
+                            if ($location) echo "Location: " . esc_html($location) . "<br>";
+                            echo "Profile ID: " . $profile->ID . "<br>";
+                        } else {
+                            echo "No profile found for this user<br>";
+                        }
+                        ?>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
+
+            <!-- Demo Login Section -->
+            <div class="scn-demo-login" style="background: #e8f4fd; border: 1px solid #3498db; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 18px;"><?php _e('Demo Login', 'scn-membership'); ?></h3>
+                <p style="margin: 0 0 15px 0; color: #7f8c8d;"><?php _e('Use these credentials to test the system:', 'scn-membership'); ?></p>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+                    <div>
+                        <strong><?php _e('Username:', 'scn-membership'); ?></strong> testmember<br>
+                        <strong><?php _e('Password:', 'scn-membership'); ?></strong> TestMember123!
+                    </div>
+                    <button type="button" id="scn-fill-demo" class="scn-btn" style="background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
+                        <?php _e('Fill Demo Credentials', 'scn-membership'); ?>
+                    </button>
+                </div>
+            </div>
 
             <form class="scn-login-form" method="post" action="">
                 <div class="scn-form-group">
@@ -124,65 +170,19 @@ get_header();
             <div class="scn-login-footer">
                 <p><?php _e("Don't have an account?", 'scn-membership'); ?></p>
                 <a href="<?php echo esc_url(home_url('/member-register/')); ?>" class="scn-register-link">
-                    <?php _e('Create Member Account', 'scn-membership'); ?>
+                    <?php _e('Register Account', 'scn-membership'); ?>
                 </a>
             </div>
             
-            <div class="scn-test-info" style="background: #e9ecef; padding: 15px; margin: 20px 0; border-radius: 5px;">
-                <h3>Test Credentials:</h3>
-                <p><strong>Username:</strong> testmember</p>
-                <p><strong>Password:</strong> TestMember123!</p>
-                <p><em>Make sure to create the test user first: <a href="create-test-user-simple.php">Create Test User</a></em></p>
-            </div>
         </div>
 
-        <div class="scn-login-info">
-            <div class="scn-info-content">
-                <h2><?php _e('Welcome to SCN', 'scn-membership'); ?></h2>
-                <p><?php _e('Join our community of speakers, educators, and thought leaders.', 'scn-membership'); ?></p>
-                
-                <div class="scn-features-list">
-                    <div class="scn-feature-item">
-                        <span class="dashicons dashicons-admin-users"></span>
-                        <div>
-                            <h3><?php _e('Member Profile', 'scn-membership'); ?></h3>
-                            <p><?php _e('Create and manage your professional profile', 'scn-membership'); ?></p>
-                        </div>
-                    </div>
-                    
-                    <div class="scn-feature-item">
-                        <span class="dashicons dashicons-calendar-alt"></span>
-                        <div>
-                            <h3><?php _e('Event Management', 'scn-membership'); ?></h3>
-                            <p><?php _e('Schedule and manage your speaking sessions', 'scn-membership'); ?></p>
-                        </div>
-                    </div>
-                    
-                    <div class="scn-feature-item">
-                        <span class="dashicons dashicons-welcome-learn-more"></span>
-                        <div>
-                            <h3><?php _e('Course Creation', 'scn-membership'); ?></h3>
-                            <p><?php _e('Share your knowledge through courses', 'scn-membership'); ?></p>
-                        </div>
-                    </div>
-                    
-                    <div class="scn-feature-item">
-                        <span class="dashicons dashicons-groups"></span>
-                        <div>
-                            <h3><?php _e('Networking', 'scn-membership'); ?></h3>
-                            <p><?php _e('Connect with other professionals', 'scn-membership'); ?></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
 <style>
 .scn-member-login-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -192,17 +192,14 @@ get_header();
 .scn-login-container {
     background: white;
     border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     overflow: hidden;
-    max-width: 1000px;
+    max-width: 500px;
     width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    min-height: 600px;
 }
 
 .scn-login-form-wrapper {
-    padding: 60px 50px;
+    padding: 50px 40px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -215,9 +212,9 @@ get_header();
 
 .scn-login-header h1 {
     color: #2c3e50;
-    font-size: 2.5em;
+    font-size: 32px;
     margin: 0 0 10px 0;
-    font-weight: 300;
+    font-weight: 700;
 }
 
 .scn-login-header p {
@@ -394,62 +391,10 @@ get_header();
     text-decoration: none;
 }
 
-.scn-login-info {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 60px 50px;
-    color: white;
-    display: flex;
-    align-items: center;
-}
-
-.scn-info-content h2 {
-    font-size: 2.2em;
-    margin: 0 0 20px 0;
-    font-weight: 300;
-}
-
-.scn-info-content > p {
-    font-size: 1.1em;
-    margin: 0 0 40px 0;
-    opacity: 0.9;
-    line-height: 1.6;
-}
-
-.scn-features-list {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-}
-
-.scn-feature-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 15px;
-}
-
-.scn-feature-item .dashicons {
-    font-size: 1.8em;
-    margin-top: 5px;
-    opacity: 0.9;
-}
-
-.scn-feature-item h3 {
-    margin: 0 0 5px 0;
-    font-size: 1.1em;
-    font-weight: 600;
-}
-
-.scn-feature-item p {
-    margin: 0;
-    opacity: 0.8;
-    font-size: 0.9em;
-    line-height: 1.4;
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {
     .scn-login-container {
-        grid-template-columns: 1fr;
         margin: 20px;
         border-radius: 15px;
     }
@@ -458,17 +403,8 @@ get_header();
         padding: 40px 30px;
     }
     
-    .scn-login-info {
-        padding: 40px 30px;
-        order: -1;
-    }
-    
     .scn-login-header h1 {
-        font-size: 2em;
-    }
-    
-    .scn-info-content h2 {
-        font-size: 1.8em;
+        font-size: 28px;
     }
     
     .scn-form-options {
@@ -488,13 +424,12 @@ get_header();
         border-radius: 10px;
     }
     
-    .scn-login-form-wrapper,
-    .scn-login-info {
+    .scn-login-form-wrapper {
         padding: 30px 20px;
     }
     
     .scn-login-header h1 {
-        font-size: 1.8em;
+        font-size: 24px;
     }
     
     .scn-form-group input {
@@ -502,5 +437,17 @@ get_header();
     }
 }
 </style>
+
+<script>
+jQuery(document).ready(function($) {
+    // Demo login fill functionality
+    $('#scn-fill-demo').on('click', function(e) {
+        e.preventDefault();
+        $('#username').val('testmember');
+        $('#password').val('TestMember123!');
+        console.log('Demo credentials filled');
+    });
+});
+</script>
 
 <?php get_footer(); ?>

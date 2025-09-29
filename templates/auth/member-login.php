@@ -73,6 +73,38 @@ get_header();
                 </div>
             <?php endif; ?>
             
+            <?php if (isset($_GET['scn_success']) && $_GET['scn_success'] === 'registration_complete'): ?>
+                <div class="scn-login-success">
+                    <span class="dashicons dashicons-yes-alt"></span>
+                    <strong><?php _e('Registration Successful!', 'scn-membership'); ?></strong><br>
+                    <?php _e('Please check your email and click the verification link to activate your account.', 'scn-membership'); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_GET['scn_success']) && $_GET['scn_success'] === 'confirmed'): ?>
+                <div class="scn-login-success">
+                    <span class="dashicons dashicons-yes-alt"></span>
+                    <strong><?php _e('Email Verified!', 'scn-membership'); ?></strong><br>
+                    <?php _e('Your account has been activated. You can now sign in.', 'scn-membership'); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_GET['scn_error']) && $_GET['scn_error'] === 'invalid_token'): ?>
+                <div class="scn-login-error">
+                    <span class="dashicons dashicons-warning"></span>
+                    <strong><?php _e('Invalid Verification Link', 'scn-membership'); ?></strong><br>
+                    <?php _e('The verification link is invalid or has already been used.', 'scn-membership'); ?>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_GET['scn_error']) && $_GET['scn_error'] === 'expired_token'): ?>
+                <div class="scn-login-error">
+                    <span class="dashicons dashicons-warning"></span>
+                    <strong><?php _e('Verification Link Expired', 'scn-membership'); ?></strong><br>
+                    <?php _e('The verification link has expired. Please request a new one.', 'scn-membership'); ?>
+                </div>
+            <?php endif; ?>
+            
             <?php if (isset($_POST['scn_member_login'])): ?>
                 <div class="scn-debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
                     <strong>Debug Info:</strong><br>
@@ -81,9 +113,55 @@ get_header();
                     Remember: <?php echo isset($_POST['rememberme']) ? 'Yes' : 'No'; ?><br>
                     <?php if (function_exists('is_user_logged_in') && is_user_logged_in()): ?>
                         Current User: <?php echo wp_get_current_user()->user_login; ?><br>
+                        <?php
+                        // Get profile information instead of just user info
+                        $user_id = get_current_user_id();
+                        $profile_posts = get_posts([
+                            'post_type' => 'scn_profile',
+                            'meta_query' => [
+                                [
+                                    'key' => 'scn_user_id',
+                                    'value' => $user_id,
+                                    'compare' => '='
+                                ]
+                            ],
+                            'posts_per_page' => 1,
+                            'post_status' => 'publish'
+                        ]);
+                        
+                        if (!empty($profile_posts)) {
+                            $profile = $profile_posts[0];
+                            $first_name = get_post_meta($profile->ID, 'scn_first_name', true);
+                            $last_name = get_post_meta($profile->ID, 'scn_last_name', true);
+                            $credentials = get_post_meta($profile->ID, 'scn_credentials', true);
+                            $location = get_post_meta($profile->ID, 'scn_location', true);
+                            
+                            echo "Profile Name: " . esc_html(trim($first_name . ' ' . $last_name)) . "<br>";
+                            if ($credentials) echo "Credentials: " . esc_html($credentials) . "<br>";
+                            if ($location) echo "Location: " . esc_html($location) . "<br>";
+                            echo "Profile ID: " . $profile->ID . "<br>";
+                        } else {
+                            echo "No profile found for this user<br>";
+                        }
+                        ?>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
+
+            <!-- Demo Login Section -->
+            <div class="scn-demo-login" style="background: #e8f4fd; border: 1px solid #3498db; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 18px;"><?php _e('Demo Login', 'scn-membership'); ?></h3>
+                <p style="margin: 0 0 15px 0; color: #7f8c8d;"><?php _e('Use these credentials to test the system:', 'scn-membership'); ?></p>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
+                    <div>
+                        <strong><?php _e('Username:', 'scn-membership'); ?></strong> testmember<br>
+                        <strong><?php _e('Password:', 'scn-membership'); ?></strong> TestMember123!
+                    </div>
+                    <button type="button" id="scn-fill-demo" class="scn-btn" style="background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
+                        <?php _e('Fill Demo Credentials', 'scn-membership'); ?>
+                    </button>
+                </div>
+            </div>
 
             <form class="scn-login-form" method="post" action="">
                 <div class="scn-form-group">
@@ -130,7 +208,7 @@ get_header();
             <div class="scn-login-footer">
                 <p><?php _e("Don't have an account?", 'scn-membership'); ?></p>
                 <a href="<?php echo esc_url(home_url('/member-register/')); ?>" class="scn-register-link">
-                    <?php _e('Create Member Account', 'scn-membership'); ?>
+                    <?php _e('Register Account', 'scn-membership'); ?>
                 </a>
             </div>
         </div>
@@ -235,6 +313,24 @@ get_header();
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.scn-login-success {
+    background: #efe;
+    border: 1px solid #cfc;
+    color: #3c3;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-left: 4px solid #27ae60;
+}
+
+.scn-login-success .dashicons {
+    color: #27ae60;
+    margin-top: 2px;
 }
 
 .scn-login-error .dashicons {
@@ -574,6 +670,14 @@ jQuery(document).ready(function($) {
     if ($username.length) {
         $username.focus();
     }
+    
+    // Demo login fill functionality
+    $('#scn-fill-demo').on('click', function(e) {
+        e.preventDefault();
+        $('#username').val('testmember');
+        $('#password').val('TestMember123!');
+        console.log('Demo credentials filled');
+    });
     
     console.log('Login page JavaScript initialized');
 });

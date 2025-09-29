@@ -18,16 +18,12 @@ class CoursesModule {
 
         add_action('init', [$this, 'init']);
         add_action('init', [$this, 'addCapabilities']);
-        add_action('init', [$this, 'extendTopicTaxonomy']);
     }
 
     public function init() {
         $this->registerHooks();
     }
 
-    public function extendTopicTaxonomy() {
-        register_taxonomy_for_object_type('scn_topic', 'scn_course');
-    }
 
     public function addCapabilities() {
         $role = get_role('administrator');

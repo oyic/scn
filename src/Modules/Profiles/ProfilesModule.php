@@ -28,8 +28,9 @@ class ProfilesModule {
 
         // Register hooks
         add_action('init', [$this, 'init']);
-        add_action('init', [$this, 'registerTaxonomies']);
+        add_action('init', [$this, 'registerTaxonomies'], 20);
         add_action('init', [$this, 'addCapabilities']);
+        add_action('init', [$this, 'connectTaxonomyToPostType'], 30);
     }
 
     public function init() {
@@ -38,19 +39,21 @@ class ProfilesModule {
     }
 
     public function registerTaxonomies() {
-        \register_taxonomy('scn_topic', 'scn_profile', [
+        \register_taxonomy('scn_topic', 'scn_course', [
             'labels' => [
-                'name' => __('Topics', 'scn-membership'),
-                'singular_name' => __('Topic', 'scn-membership'),
-                'search_items' => __('Search Topics', 'scn-membership'),
-                'all_items' => __('All Topics', 'scn-membership'),
-                'edit_item' => __('Edit Topic', 'scn-membership'),
-                'update_item' => __('Update Topic', 'scn-membership'),
-                'add_new_item' => __('Add New Topic', 'scn-membership'),
-                'new_item_name' => __('New Topic Name', 'scn-membership'),
-                'menu_name' => __('Topics', 'scn-membership'),
+                'name' => __('Course Topics', 'scn-membership'),
+                'singular_name' => __('Course Topic', 'scn-membership'),
+                'search_items' => __('Search Course Topics', 'scn-membership'),
+                'all_items' => __('All Course Topics', 'scn-membership'),
+                'parent_item' => __('Parent Course Topic', 'scn-membership'),
+                'parent_item_colon' => __('Parent Course Topic:', 'scn-membership'),
+                'edit_item' => __('Edit Course Topic', 'scn-membership'),
+                'update_item' => __('Update Course Topic', 'scn-membership'),
+                'add_new_item' => __('Add New Course Topic', 'scn-membership'),
+                'new_item_name' => __('New Course Topic Name', 'scn-membership'),
+                'menu_name' => __('Course Topics', 'scn-membership'),
             ],
-            'hierarchical' => false,
+            'hierarchical' => true,
             'public' => true,
             'show_in_rest' => true,
             'show_admin_column' => true,
@@ -60,6 +63,13 @@ class ProfilesModule {
         if (!get_option('scn_topic_rewrite_rules_flushed')) {
             flush_rewrite_rules();
             update_option('scn_topic_rewrite_rules_flushed', true);
+        }
+    }
+
+    public function connectTaxonomyToPostType() {
+        // Ensure the taxonomy is properly connected to the post type
+        if (taxonomy_exists('scn_topic') && post_type_exists('scn_course')) {
+            register_taxonomy_for_object_type('scn_topic', 'scn_course');
         }
     }
 

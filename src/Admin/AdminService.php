@@ -135,7 +135,7 @@ class AdminService {
             __('Topics', 'scn-membership'),
             __('Topics', 'scn-membership'),
             'manage_categories',
-            'edit-tags.php?taxonomy=scn_topic&post_type=scn_profile'
+            'edit-tags.php?taxonomy=scn_topic&post_type=scn_course'
         );
     }
 
@@ -225,7 +225,7 @@ class AdminService {
         }
 
         if (!taxonomy_exists('scn_topic')) {
-            register_taxonomy('scn_topic', 'scn_profile', [
+            register_taxonomy('scn_topic', 'scn_course', [
                 'labels' => [
                     'name' => __('Topics', 'scn-membership'),
                     'singular_name' => __('Topic', 'scn-membership'),
@@ -699,8 +699,8 @@ class AdminService {
                     
                     <div class="scn-admin-card">
                         <h2><?php _e('Topics', 'scn-membership'); ?></h2>
-                        <p><?php _e('Manage topic categories for profiles and courses.', 'scn-membership'); ?></p>
-                        <a href="<?php echo admin_url('edit-tags.php?taxonomy=scn_topic&post_type=scn_profile'); ?>" class="button button-primary">
+                        <p><?php _e('Manage topic categories for courses.', 'scn-membership'); ?></p>
+                        <a href="<?php echo admin_url('edit-tags.php?taxonomy=scn_topic&post_type=scn_course'); ?>" class="button button-primary">
                             <?php _e('Manage Topics', 'scn-membership'); ?>
                         </a>
                     </div>

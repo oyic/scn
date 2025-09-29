@@ -36,117 +36,10 @@
                 return;
             }
 
-            // Load stats
-            this.loadStats();
-
-            // Load upcoming sessions
-            this.loadUpcomingSessions();
-
-            // Load recent activity
-            this.loadRecentActivity();
-
             // Load profile completion
             this.loadProfileStats();
         }
 
-        loadStats() {
-            const $statsContainer = $('#scn-stats-container');
-            
-            if (!$statsContainer.length) return;
-
-            $.ajax({
-                url: scnDashboard.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'scn_dashboard_stats',
-                    nonce: scnDashboard.nonce
-                },
-                beforeSend: () => {
-                    $statsContainer.html(`
-                        <div class="scn-loading">
-                            <span class="dashicons dashicons-update"></span>
-                            ${scnDashboard.strings.loading}
-                        </div>
-                    `);
-                },
-                success: (response) => {
-                    if (response.success) {
-                        this.renderStats(response.data);
-                    } else {
-                        this.showError($statsContainer, response.data || scnDashboard.strings.error);
-                    }
-                },
-                error: () => {
-                    this.showError($statsContainer, scnDashboard.strings.error);
-                }
-            });
-        }
-
-        loadUpcomingSessions() {
-            const $sessionsContainer = $('#scn-upcoming-sessions');
-            
-            if (!$sessionsContainer.length) return;
-
-            $.ajax({
-                url: scnDashboard.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'scn_dashboard_upcoming_sessions',
-                    nonce: scnDashboard.nonce
-                },
-                beforeSend: () => {
-                    $sessionsContainer.html(`
-                        <div class="scn-loading">
-                            <span class="dashicons dashicons-update"></span>
-                            ${scnDashboard.strings.loading}
-                        </div>
-                    `);
-                },
-                success: (response) => {
-                    if (response.success) {
-                        this.renderUpcomingSessions(response.data);
-                    } else {
-                        this.showError($sessionsContainer, response.data || scnDashboard.strings.error);
-                    }
-                },
-                error: () => {
-                    this.showError($sessionsContainer, scnDashboard.strings.error);
-                }
-            });
-        }
-
-        loadRecentActivity() {
-            const $activityContainer = $('#scn-recent-activity');
-            
-            if (!$activityContainer.length) return;
-
-            $.ajax({
-                url: scnDashboard.ajaxUrl,
-                type: 'POST',
-                data: {
-                    action: 'scn_dashboard_recent_activity',
-                    nonce: scnDashboard.nonce
-                },
-                beforeSend: () => {
-                    $activityContainer.html(`
-                        <div class="scn-loading">
-                            <span class="dashicons dashicons-update"></span>
-                            ${scnDashboard.strings.loading}
-                        </div>
-                    `);
-                },
-                success: (response) => {
-                    if (response.success) {
-                        this.renderRecentActivity(response.data);
-                    } else {
-                        this.showError($activityContainer, response.data || scnDashboard.strings.error);
-                    }
-                },
-                error: () => {
-                    this.showError($activityContainer, scnDashboard.strings.error);
-                }
-            });
-        }
 
         loadProfileStats() {
             const $completionContainer = $('#scn-profile-completion');
@@ -181,44 +74,6 @@
             });
         }
 
-        renderStats(stats) {
-            const $statsContainer = $('#scn-stats-container');
-            const template = $('#scn-stats-template').html();
-            
-            if (!template) {
-                console.error('Stats template not found');
-                return;
-            }
-
-            const html = this.renderTemplate(template, stats);
-            $statsContainer.html(html);
-        }
-
-        renderUpcomingSessions(sessions) {
-            const $sessionsContainer = $('#scn-upcoming-sessions');
-            const template = $('#scn-sessions-template').html();
-            
-            if (!template) {
-                console.error('Sessions template not found');
-                return;
-            }
-
-            const html = this.renderTemplate(template, { sessions: sessions });
-            $sessionsContainer.html(html);
-        }
-
-        renderRecentActivity(activity) {
-            const $activityContainer = $('#scn-recent-activity');
-            const template = $('#scn-activity-template').html();
-            
-            if (!template) {
-                console.error('Activity template not found');
-                return;
-            }
-
-            const html = this.renderTemplate(template, { activity: activity });
-            $activityContainer.html(html);
-        }
 
         renderProfileCompletion(stats) {
             const $completionContainer = $('#scn-profile-completion');

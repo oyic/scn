@@ -50,7 +50,7 @@ get_header();
 <style>
 .scn-profile-login-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -63,12 +63,12 @@ get_header();
     border-radius: 20px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     overflow: hidden;
-    max-width: 400px;
+    max-width: 500px;
     width: 100%;
 }
 
 .scn-login-form-wrapper {
-    padding: 40px;
+    padding: 50px 40px;
 }
 
 .scn-login-header {
@@ -78,7 +78,7 @@ get_header();
 
 .scn-login-header h1 {
     color: #2c3e50;
-    font-size: 28px;
+    font-size: 32px;
     font-weight: 700;
     margin: 0 0 10px 0;
 }
@@ -103,6 +103,7 @@ get_header();
 
 .scn-form-group {
     margin-bottom: 20px;
+    position: relative;
 }
 
 .scn-form-group label {
@@ -134,7 +135,7 @@ get_header();
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
     border: none;
-    padding: 15px;
+    padding: 18px;
     border-radius: 10px;
     font-size: 16px;
     font-weight: 600;
@@ -173,13 +174,42 @@ get_header();
     border-left: 3px solid #3498db;
 }
 
+.scn-login-footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 25px;
+    border-top: 1px solid #ecf0f1;
+}
+
+.scn-login-footer p {
+    color: #7f8c8d;
+    margin: 0 0 15px 0;
+}
+
+.scn-register-link {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 12px 25px;
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.scn-register-link:hover {
+    background: #3498db;
+    color: white;
+    text-decoration: none;
+}
+
 @media (max-width: 480px) {
     .scn-login-form-wrapper {
-        padding: 30px 20px;
+        padding: 40px 30px;
     }
     
     .scn-login-header h1 {
-        font-size: 24px;
+        font-size: 28px;
     }
 }
 </style>
@@ -188,8 +218,8 @@ get_header();
     <div class="scn-login-container">
         <div class="scn-login-form-wrapper">
             <div class="scn-login-header">
-                <h1><?php _e("SCN Member Login", "scn-membership"); ?></h1>
-                <p><?php _e("Sign in with your profile credentials", "scn-membership"); ?></p>
+                <h1><?php _e("Welcome Back", "scn-membership"); ?></h1>
+                <p><?php _e("Sign in to your SCN account", "scn-membership"); ?></p>
             </div>
 
             <?php if (isset($login_error)): ?>
@@ -215,22 +245,12 @@ get_header();
                 </button>
             </form>
             
-            <div class="scn-test-info" style="background: #e9ecef; padding: 15px; margin: 20px 0; border-radius: 5px;">
-                <h3>Test Credentials:</h3>
-                <?php
-                $profiles = get_posts([
-                    "post_type" => "scn_profile",
-                    "posts_per_page" => -1,
-                    "post_status" => "publish"
-                ]);
-                
-                foreach ($profiles as $profile) {
-                    $username = get_post_meta($profile->ID, "scn_username", true);
-                    if ($username) {
-                        echo "<p><strong>" . $profile->post_title . ":</strong> $username / Profile" . $profile->ID . "!</p>";
-                    }
-                }
-                ?>
+
+            <div class="scn-login-footer">
+                <p><?php _e("Don't have an account?", "scn-membership"); ?></p>
+                <a href="<?php echo esc_url(home_url('/member-register/')); ?>" class="scn-register-link">
+                    <?php _e("Create Account", "scn-membership"); ?>
+                </a>
             </div>
         </div>
     </div>
