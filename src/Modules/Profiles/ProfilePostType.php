@@ -15,8 +15,8 @@ class ProfilePostType {
         add_filter('manage_edit-scn_profile_sortable_columns', [$this, 'makeSortableColumns']);
         add_action('pre_get_posts', [$this, 'handleCustomSorting']);
         
-        // Scripts are now handled by AdminService to prevent conflicts
-        // add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
+        // Move publish box to sidebar for profiles
+        add_action('add_meta_boxes', [$this, 'movePublishBoxToSidebar'], 999);
     }
 
     public function registerPostType() {
@@ -38,7 +38,7 @@ class ProfilePostType {
                 'public' => true,
                 'has_archive' => true,
                 'rewrite' => ['slug' => 'profiles'],
-                'supports' => ['thumbnail'],
+                'supports' => ['title', 'editor', 'thumbnail', 'author', 'excerpt', 'custom-fields'],
                 'capability_type' => 'scn_profile',
                 'map_meta_cap' => true,
                 'show_in_rest' => true,
@@ -121,21 +121,37 @@ class ProfilePostType {
             return;
         }
 
-        // Add debug meta box to test if this method is being called
+        // Add featured image metabox to sidebar
         add_meta_box(
-            'scn_profile_debug',
-            __('SCN Profile Debug', 'scn-membership'),
-            function($post) {
-                echo '<p><strong>✅ ProfilePostType::addMetaBoxes() is working!</strong></p>';
-                echo '<p>Post ID: ' . $post->ID . '</p>';
-                echo '<p>Post Type: ' . $post->post_type . '</p>';
-                echo '<p>This confirms the ProfilePostType meta box system is functioning correctly.</p>';
-            },
+            'postimagediv',
+            __('Profile Image', 'scn-membership'),
+            'post_thumbnail_meta_box',
             'scn_profile',
-            'normal',
+            'side',
             'high'
         );
 
+        // Add topics metabox to sidebar
+        add_meta_box(
+            'scn_profile_topics',
+            __('Profile Topics', 'scn-membership'),
+            [$this, 'renderTopicsMetaBox'],
+            'scn_profile',
+            'side',
+            'default'
+        );
+
+        // Add badges metabox to sidebar
+        add_meta_box(
+            'scn_profile_badges',
+            __('Badges & Recognition', 'scn-membership'),
+            [$this, 'renderBadgesMetaBox'],
+            'scn_profile',
+            'side',
+            'default'
+        );
+
+        // Main content area metaboxes
         add_meta_box(
             'scn_profile_basic_info',
             __('Basic Information', 'scn-membership'),
@@ -180,15 +196,26 @@ class ProfilePostType {
             'normal',
             'high'
         );
+    }
 
-        add_meta_box(
-            'scn_profile_badges',
-            __('Badges & Recognition', 'scn-membership'),
-            [$this, 'renderBadgesMetaBox'],
-            'scn_profile',
-            'normal',
-            'high'
-        );
+    public function movePublishBoxToSidebar() {
+        global $post_type, $pagenow;
+        
+        // Only apply to profile edit pages
+        if ($post_type === 'scn_profile' && ($pagenow === 'post.php' || $pagenow === 'post-new.php')) {
+            // Remove the default publish box from normal position
+            remove_meta_box('submitdiv', 'scn_profile', 'normal');
+            
+            // Add it back to the sidebar
+            add_meta_box(
+                'submitdiv',
+                __('Publish', 'scn-membership'),
+                'post_submit_meta_box',
+                'scn_profile',
+                'side',
+                'high'
+            );
+        }
     }
 
     public function renderBasicInfoMetaBox($post) {
@@ -202,7 +229,6 @@ class ProfilePostType {
         $social_links = get_post_meta($post->ID, 'scn_social_links', true) ?: [];
         $bio = get_post_meta($post->ID, 'scn_bio', true);
         $member_since = get_post_meta($post->ID, 'scn_member_since', true);
-        $topics = get_post_meta($post->ID, 'scn_topics', true) ?: [];
 
         ?>
         <table class="form-table">
@@ -256,8 +282,12 @@ class ProfilePostType {
             'textarea_rows' => 10,
         ]);
         ?>
+        <?php
+    }
 
-        <h4><?php _e('Topics', 'scn-membership'); ?></h4>
+    public function renderTopicsMetaBox($post) {
+        $topics = get_post_meta($post->ID, 'scn_topics', true) ?: [];
+        ?>
         <p><?php _e('Select topics that describe your expertise:', 'scn-membership'); ?></p>
         <?php
         $topic_terms = get_terms(['taxonomy' => 'scn_topic', 'hide_empty' => false]);
@@ -271,6 +301,8 @@ class ProfilePostType {
                 </label><br>
                 <?php
             }
+        } else {
+            echo '<p>' . __('No topics available. ', 'scn-membership') . '<a href="' . admin_url('edit-tags.php?taxonomy=scn_topic&post_type=scn_course') . '">' . __('Add topics', 'scn-membership') . '</a></p>';
         }
         ?>
         <?php
@@ -578,58 +610,6 @@ class ProfilePostType {
         return false;
     }
 
-    public function enqueueAdminScripts($hook) {
-        global $post_type;
-
-        // Check if we're on the profile edit screen
-        if ($post_type !== 'scn_profile' || !in_array($hook, ['post.php', 'post-new.php'])) {
-            return;
-        }
-
-        // Check if we have the required constants
-        if (!defined('SCN_MEMBERSHIP_URL') || !defined('SCN_MEMBERSHIP_VERSION')) {
-            return;
-        }
-
-        wp_enqueue_media();
-        wp_enqueue_script('jquery-ui-sortable');
-        
-        wp_enqueue_script(
-            'scn-profiles-admin',
-            SCN_MEMBERSHIP_URL . 'assets/js/profiles-admin.js',
-            ['jquery', 'jquery-ui-sortable', 'media-upload'],
-            SCN_MEMBERSHIP_VERSION,
-            true
-        );
-
-        wp_enqueue_style(
-            'scn-profiles-admin',
-            SCN_MEMBERSHIP_URL . 'assets/css/profiles-admin.css',
-            [],
-            SCN_MEMBERSHIP_VERSION
-        );
-
-        wp_localize_script('scn-profiles-admin', 'scnProfilesAdmin', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('scn_profiles_admin'),
-            'strings' => [
-                'selectImages' => __('Select Images', 'scn-membership'),
-                'selectFiles' => __('Select Files', 'scn-membership'),
-                'removeImage' => __('Remove Image', 'scn-membership'),
-                'removeFile' => __('Remove File', 'scn-membership'),
-                'uploading' => __('Uploading...', 'scn-membership'),
-                'uploadError' => __('Upload failed. Please try again.', 'scn-membership'),
-                'invalidFileType' => __('Invalid file type. Please select a valid image.', 'scn-membership'),
-                'fileTooLarge' => __('File is too large. Please select a smaller file.', 'scn-membership'),
-                'serviceName' => __('Service name', 'scn-membership'),
-                'serviceDescription' => __('Short description (optional)', 'scn-membership'),
-                'removeService' => __('Remove', 'scn-membership'),
-                'videoPreview' => __('Video Preview', 'scn-membership'),
-                'videoThumbnail' => __('Video thumbnail', 'scn-membership'),
-            ],
-        ]);
-    }
-
     public function addCustomColumns($columns) {
         // Remove the default featured image column to avoid duplication
         unset($columns['featured_image']);
@@ -646,27 +626,10 @@ class ProfilePostType {
             }
         }
         
-        // Debug: Log what columns we're working with
-        error_log('SCN Profile Columns: ' . print_r(array_keys($new_columns), true));
-        
         return $new_columns;
     }
 
     public function displayCustomColumns($column, $post_id) {
-        // Debug: Log what column is being displayed
-        error_log('SCN Profile Display Column: ' . $column . ' for post_id: ' . $post_id);
-        
-        // Prevent duplicate output with static flag
-        static $displayed = [];
-        $key = $post_id . '_' . $column;
-        
-        if (isset($displayed[$key])) {
-            error_log('SCN Profile: Preventing duplicate display for ' . $key);
-            return;
-        }
-        
-        $displayed[$key] = true;
-        
         switch ($column) {
             case 'featured_image':
                 $image_id = get_post_thumbnail_id($post_id);
@@ -701,5 +664,3 @@ class ProfilePostType {
         }
     }
 }
-
-

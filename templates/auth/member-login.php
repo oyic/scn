@@ -9,7 +9,25 @@ if (!defined('ABSPATH')) {
 
 // Redirect if already logged in
 if (is_user_logged_in()) {
-    wp_redirect(home_url('/member-dashboard/'));
+    $current_user_id = get_current_user_id();
+    $profile_posts = get_posts([
+        'post_type' => 'scn_profile',
+        'meta_query' => [
+            [
+                'key' => 'scn_user_id',
+                'value' => $current_user_id,
+                'compare' => '='
+            ]
+        ],
+        'posts_per_page' => 1,
+        'post_status' => 'publish'
+    ]);
+    
+    if (!empty($profile_posts)) {
+        wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
+    } else {
+        wp_redirect(home_url('/member-dashboard/'));
+    }
     exit;
 }
 
@@ -43,8 +61,8 @@ if ($_POST && isset($_POST['scn_member_login'])) {
         ]);
         
         if (!empty($profile_posts)) {
-            // User has profile, redirect to dashboard
-            wp_redirect(home_url('/member-dashboard/'));
+            // User has profile, redirect to frontend profile page
+            wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
         } else {
             // User doesn't have profile, redirect to profile creation
             wp_redirect(admin_url('post-new.php?post_type=scn_profile'));
@@ -104,64 +122,6 @@ get_header();
                     <?php _e('The verification link has expired. Please request a new one.', 'scn-membership'); ?>
                 </div>
             <?php endif; ?>
-            
-            <?php if (isset($_POST['scn_member_login'])): ?>
-                <div class="scn-debug-info" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-size: 12px;">
-                    <strong>Debug Info:</strong><br>
-                    Username: <?php echo esc_html($_POST['username'] ?? 'not set'); ?><br>
-                    Password: <?php echo !empty($_POST['password']) ? '[SET]' : '[NOT SET]'; ?><br>
-                    Remember: <?php echo isset($_POST['rememberme']) ? 'Yes' : 'No'; ?><br>
-                    <?php if (function_exists('is_user_logged_in') && is_user_logged_in()): ?>
-                        Current User: <?php echo wp_get_current_user()->user_login; ?><br>
-                        <?php
-                        // Get profile information instead of just user info
-                        $user_id = get_current_user_id();
-                        $profile_posts = get_posts([
-                            'post_type' => 'scn_profile',
-                            'meta_query' => [
-                                [
-                                    'key' => 'scn_user_id',
-                                    'value' => $user_id,
-                                    'compare' => '='
-                                ]
-                            ],
-                            'posts_per_page' => 1,
-                            'post_status' => 'publish'
-                        ]);
-                        
-                        if (!empty($profile_posts)) {
-                            $profile = $profile_posts[0];
-                            $first_name = get_post_meta($profile->ID, 'scn_first_name', true);
-                            $last_name = get_post_meta($profile->ID, 'scn_last_name', true);
-                            $credentials = get_post_meta($profile->ID, 'scn_credentials', true);
-                            $location = get_post_meta($profile->ID, 'scn_location', true);
-                            
-                            echo "Profile Name: " . esc_html(trim($first_name . ' ' . $last_name)) . "<br>";
-                            if ($credentials) echo "Credentials: " . esc_html($credentials) . "<br>";
-                            if ($location) echo "Location: " . esc_html($location) . "<br>";
-                            echo "Profile ID: " . $profile->ID . "<br>";
-                        } else {
-                            echo "No profile found for this user<br>";
-                        }
-                        ?>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- Demo Login Section -->
-            <div class="scn-demo-login" style="background: #e8f4fd; border: 1px solid #3498db; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                <h3 style="color: #2c3e50; margin: 0 0 15px 0; font-size: 18px;"><?php _e('Demo Login', 'scn-membership'); ?></h3>
-                <p style="margin: 0 0 15px 0; color: #7f8c8d;"><?php _e('Use these credentials to test the system:', 'scn-membership'); ?></p>
-                <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: center;">
-                    <div>
-                        <strong><?php _e('Username:', 'scn-membership'); ?></strong> testmember<br>
-                        <strong><?php _e('Password:', 'scn-membership'); ?></strong> TestMember123!
-                    </div>
-                    <button type="button" id="scn-fill-demo" class="scn-btn" style="background: #3498db; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">
-                        <?php _e('Fill Demo Credentials', 'scn-membership'); ?>
-                    </button>
-                </div>
-            </div>
 
             <form class="scn-login-form" method="post" action="">
                 <div class="scn-form-group">
@@ -279,7 +239,7 @@ get_header();
 }
 
 .scn-login-form-wrapper {
-    padding: 60px 50px;
+    padding: 40px 50px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -287,7 +247,7 @@ get_header();
 
 .scn-login-header {
     text-align: center;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
 }
 
 .scn-login-header h1 {
@@ -340,7 +300,7 @@ get_header();
 .scn-login-form {
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    gap: 18px;
 }
 
 .scn-form-group {
@@ -349,18 +309,18 @@ get_header();
 
 .scn-form-group label {
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     color: #2c3e50;
     font-weight: 600;
-    font-size: 0.9em;
+    font-size: 0.85em;
 }
 
 .scn-form-group input {
     width: 100%;
-    padding: 15px 20px 15px 50px;
+    padding: 10px 15px 10px 40px;
     border: 2px solid #ecf0f1;
-    border-radius: 10px;
-    font-size: 1em;
+    border-radius: 8px;
+    font-size: 0.95em;
     transition: all 0.3s ease;
     box-sizing: border-box;
 }
@@ -373,24 +333,26 @@ get_header();
 
 .scn-input-icon {
     position: absolute;
-    left: 15px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
     color: #bdc3c7;
-    margin-top: 12px;
+    margin-top: 10px;
+    font-size: 18px;
 }
 
 .scn-toggle-password {
     position: absolute;
-    right: 15px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%);
     background: none;
     border: none;
     color: #bdc3c7;
     cursor: pointer;
-    margin-top: 12px;
-    padding: 5px;
+    margin-top: 10px;
+    padding: 4px;
+    font-size: 18px;
 }
 
 .scn-toggle-password:hover {
@@ -401,7 +363,7 @@ get_header();
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 10px 0;
+    margin: 5px 0;
 }
 
 .scn-checkbox-label {
@@ -458,9 +420,9 @@ get_header();
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
     border: none;
-    padding: 18px;
-    border-radius: 10px;
-    font-size: 1.1em;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 1em;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -495,8 +457,8 @@ get_header();
 
 .scn-login-footer {
     text-align: center;
-    margin-top: 30px;
-    padding-top: 25px;
+    margin-top: 25px;
+    padding-top: 20px;
     border-top: 1px solid #ecf0f1;
 }
 
@@ -670,14 +632,6 @@ jQuery(document).ready(function($) {
     if ($username.length) {
         $username.focus();
     }
-    
-    // Demo login fill functionality
-    $('#scn-fill-demo').on('click', function(e) {
-        e.preventDefault();
-        $('#username').val('testmember');
-        $('#password').val('TestMember123!');
-        console.log('Demo credentials filled');
-    });
     
     console.log('Login page JavaScript initialized');
 });

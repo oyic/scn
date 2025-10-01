@@ -16,6 +16,25 @@ class AuthShortcodes
         add_shortcode('scn_member_dashboard', [$this, 'renderDashboardPage']);
         add_shortcode('scn_member_profile', [$this, 'renderMemberProfilePage']);
         add_shortcode('scn_test_auth', [$this, 'renderTestPage']);
+        add_action('wp_enqueue_scripts', [$this, 'enqueueProfileScripts']);
+    }
+    
+    /**
+     * Enqueue scripts for member profile page
+     */
+    public function enqueueProfileScripts()
+    {
+        // Check if we're on a page with the profile shortcode and user is logged in
+        global $post;
+        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'scn_member_profile') && is_user_logged_in()) {
+            // Enqueue WordPress media scripts for image upload/cropping
+            wp_enqueue_media();
+            wp_enqueue_script('jquery');
+            wp_enqueue_script('media-editor');
+            wp_enqueue_script('media-views');
+            wp_enqueue_script('image-edit');
+            wp_enqueue_script('wp-util');
+        }
     }
 
     /**
@@ -214,9 +233,27 @@ class AuthShortcodes
             exit;
         }
 
-        // Redirect logged-in users to dashboard
+        // Redirect logged-in users to their profile
         if (is_user_logged_in()) {
-            wp_redirect(home_url('/member-dashboard/'));
+            $current_user_id = get_current_user_id();
+            $profile_posts = get_posts([
+                'post_type' => 'scn_profile',
+                'meta_query' => [
+                    [
+                        'key' => 'scn_user_id',
+                        'value' => $current_user_id,
+                        'compare' => '='
+                    ]
+                ],
+                'posts_per_page' => 1,
+                'post_status' => 'publish'
+            ]);
+            
+            if (!empty($profile_posts)) {
+                wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
+            } else {
+                wp_redirect(home_url('/member-dashboard/'));
+            }
             exit;
         }
 
@@ -250,8 +287,8 @@ class AuthShortcodes
                 ]);
                 
                 if (!empty($profile_posts)) {
-                    // User has profile, redirect to dashboard
-                    wp_redirect(home_url('/member-dashboard/'));
+                    // User has profile, redirect to frontend profile page
+                    wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
                 } else {
                     // User doesn't have profile, redirect to profile creation
                     wp_redirect(admin_url('post-new.php?post_type=scn_profile'));
@@ -274,9 +311,27 @@ class AuthShortcodes
             return '';
         }
 
-        // Redirect logged-in users to dashboard
+        // Redirect logged-in users to their profile
         if (is_user_logged_in()) {
-            wp_redirect(home_url('/member-dashboard/'));
+            $current_user_id = get_current_user_id();
+            $profile_posts = get_posts([
+                'post_type' => 'scn_profile',
+                'meta_query' => [
+                    [
+                        'key' => 'scn_user_id',
+                        'value' => $current_user_id,
+                        'compare' => '='
+                    ]
+                ],
+                'posts_per_page' => 1,
+                'post_status' => 'publish'
+            ]);
+            
+            if (!empty($profile_posts)) {
+                wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
+            } else {
+                wp_redirect(home_url('/member-dashboard/'));
+            }
             exit;
         }
 

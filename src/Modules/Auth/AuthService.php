@@ -99,8 +99,8 @@ class AuthService {
         $profile = $this->getUserProfile($user->ID);
         
         if ($profile) {
-            // User has profile, redirect to dashboard
-            wp_redirect(home_url('/member-dashboard/'));
+            // User has profile, redirect to frontend profile page
+            wp_redirect(home_url('/members-profile/?profile_id=' . $profile->ID));
             exit;
         } else {
             // User doesn't have profile, redirect to profile creation
@@ -126,7 +126,14 @@ class AuthService {
         // Redirect logged-in users away from login/register pages
         if (is_user_logged_in()) {
             if (get_query_var('scn_member_login') || get_query_var('scn_member_register')) {
-                wp_redirect(home_url('/member-dashboard/'));
+                $current_user_id = get_current_user_id();
+                $profile = $this->getUserProfile($current_user_id);
+                
+                if ($profile) {
+                    wp_redirect(home_url('/members-profile/?profile_id=' . $profile->ID));
+                } else {
+                    wp_redirect(home_url('/member-dashboard/'));
+                }
                 exit;
             }
         } else {

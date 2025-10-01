@@ -898,65 +898,6 @@ body {
 
             <!-- Courses Section -->
             <div class="scn-dashboard-courses">
-                <div class="scn-courses-header">
-                    <h2><?php _e('Courses', 'scn-membership'); ?></h2>
-                </div>
-                
-                <!-- Available Courses -->
-                <div class="scn-courses-section">
-                    <h3><?php _e('Available Courses', 'scn-membership'); ?></h3>
-                    <div class="scn-courses-table-wrapper">
-                        <table class="scn-courses-table">
-                            <thead>
-                                <tr>
-                                    <th class="scn-course-image"><?php _e('Image', 'scn-membership'); ?></th>
-                                    <th class="scn-course-title"><?php _e('Course', 'scn-membership'); ?></th>
-                                    <th class="scn-course-author"><?php _e('Author', 'scn-membership'); ?></th>
-                                    <th class="scn-course-topics"><?php _e('Topics', 'scn-membership'); ?></th>
-                                    <th class="scn-course-status"><?php _e('Status', 'scn-membership'); ?></th>
-                                    <th class="scn-course-actions"><?php _e('Actions', 'scn-membership'); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody id="scn-available-courses">
-                                <tr>
-                                    <td colspan="6" class="scn-loading">
-                        <span class="dashicons dashicons-update"></span>
-                                        <?php _e('Loading available courses...', 'scn-membership'); ?>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                </div>
-            </div>
-
-                <!-- My Enrolled Courses -->
-                <div class="scn-courses-section">
-                    <h3><?php _e('My Enrolled Courses', 'scn-membership'); ?></h3>
-                    <div class="scn-courses-table-wrapper">
-                        <table class="scn-courses-table">
-                            <thead>
-                                <tr>
-                                    <th class="scn-course-image"><?php _e('Image', 'scn-membership'); ?></th>
-                                    <th class="scn-course-title"><?php _e('Course', 'scn-membership'); ?></th>
-                                    <th class="scn-course-author"><?php _e('Author', 'scn-membership'); ?></th>
-                                    <th class="scn-course-topics"><?php _e('Topics', 'scn-membership'); ?></th>
-                                    <th class="scn-course-status"><?php _e('Status', 'scn-membership'); ?></th>
-                                    <th class="scn-course-actions"><?php _e('Actions', 'scn-membership'); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody id="scn-enrolled-courses">
-                                <tr>
-                                    <td colspan="6" class="scn-loading">
-                        <span class="dashicons dashicons-update"></span>
-                                        <?php _e('Loading your enrolled courses...', 'scn-membership'); ?>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                </div>
-            </div>
-
-                <!-- My Created Courses -->
                 <div class="scn-courses-section">
                     <div class="scn-courses-section-header">
                         <h3><?php _e('My Created Courses', 'scn-membership'); ?></h3>
@@ -982,6 +923,40 @@ body {
                                     <td colspan="6" class="scn-loading">
                         <span class="dashicons dashicons-update"></span>
                                         <?php _e('Loading your created courses...', 'scn-membership'); ?>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Section -->
+            <div class="scn-dashboard-events">
+                <div class="scn-events-section">
+                    <div class="scn-events-section-header">
+                        <h3><?php _e('My Created Events', 'scn-membership'); ?></h3>
+                        <button type="button" class="scn-btn scn-btn-primary scn-add-event-btn">
+                            <span class="dashicons dashicons-plus"></span>
+                            <?php _e('Create Event', 'scn-membership'); ?>
+                        </button>
+                    </div>
+                    <div class="scn-events-table-wrapper">
+                        <table class="scn-events-table">
+                            <thead>
+                                <tr>
+                                    <th class="scn-event-name"><?php _e('Event Name', 'scn-membership'); ?></th>
+                                    <th class="scn-event-location"><?php _e('Location', 'scn-membership'); ?></th>
+                                    <th class="scn-event-date"><?php _e('Start Date', 'scn-membership'); ?></th>
+                                    <th class="scn-event-status"><?php _e('Status', 'scn-membership'); ?></th>
+                                    <th class="scn-event-actions"><?php _e('Actions', 'scn-membership'); ?></th>
+                                </tr>
+                            </thead>
+                            <tbody id="scn-created-events">
+                                <tr>
+                                    <td colspan="5" class="scn-loading">
+                        <span class="dashicons dashicons-update"></span>
+                                        <?php _e('Loading your created events...', 'scn-membership'); ?>
                                     </td>
                                 </tr>
                             </tbody>
@@ -1145,9 +1120,9 @@ body {
                                 </button>
     </div>
                         </div>
-                    </div>
-                </div>
-
+        </div>
+    </div>
+    
                 <div class="scn-tab-content" id="tab-ondemand">
                     <div class="scn-form-section">
                         <h3><span class="dashicons dashicons-video-alt3"></span>On-Demand Course Information</h3>
@@ -1155,16 +1130,16 @@ body {
                             <div class="scn-form-group">
                                 <label for="scn_ondemand_title">Title</label>
                                 <input type="text" id="scn_ondemand_title" name="scn_ondemand_title" placeholder="On-demand course title">
-            </div>
+        </div>
                             <div class="scn-form-group">
                                 <label for="scn_ondemand_school">School/Platform</label>
                                 <input type="text" id="scn_ondemand_school" name="scn_ondemand_school" placeholder="e.g., Coursera, Udemy">
-            </div>
+        </div>
                             <div class="scn-form-group full-width">
                                 <label for="scn_ondemand_link">Link</label>
                                 <input type="url" id="scn_ondemand_link" name="scn_ondemand_link" placeholder="https://" class="regular-text">
                                 <div class="scn-form-help">Must be a valid HTTPS URL</div>
-        </div>
+    </div>
         </div>
                     </div>
                 </div>
@@ -1236,6 +1211,91 @@ body {
             <button type="submit" form="scn-add-course-form" class="scn-btn scn-btn-primary scn-save-course">
                 <span class="dashicons dashicons-yes-alt"></span>
                 <?php _e('Create Course', 'scn-membership'); ?>
+            </button>
+            <button type="button" class="scn-btn scn-btn-secondary scn-modal-close">
+                <?php _e('Cancel', 'scn-membership'); ?>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Event Modal -->
+<div id="scn-add-event-modal" class="scn-modal" style="display: none;">
+    <div class="scn-modal-overlay"></div>
+    <div class="scn-modal-content">
+        <div class="scn-modal-header">
+            <h2><?php _e('Create New Event', 'scn-membership'); ?></h2>
+            <button type="button" class="scn-modal-close">
+                <span class="dashicons dashicons-no-alt"></span>
+            </button>
+            </div>
+        <div class="scn-modal-body">
+            <form id="scn-add-event-form">
+                <div class="scn-form-section">
+                    <h3><span class="dashicons dashicons-calendar-alt"></span>Event Information</h3>
+                    <div class="scn-form-grid">
+                        <div class="scn-form-group full-width">
+                            <label for="scn_event_name">Event Name <span class="required">*</span></label>
+                            <input type="text" id="scn_event_name" name="scn_event_name" required placeholder="Enter event name">
+            </div>
+                        <div class="scn-form-group full-width">
+                            <label for="scn_event_official_name">Official Name (if different)</label>
+                            <input type="text" id="scn_event_official_name" name="scn_event_official_name" placeholder="Official event name">
+        </div>
+                        <div class="scn-form-group full-width">
+                            <label for="scn_event_description">Description</label>
+                            <textarea id="scn_event_description" name="scn_event_description" placeholder="Brief description of the event..." rows="4"></textarea>
+        </div>
+                    </div>
+                </div>
+
+                <div class="scn-form-section">
+                    <h3><span class="dashicons dashicons-location"></span>Location</h3>
+                    <div class="scn-form-grid">
+                        <div class="scn-form-group">
+                            <label for="scn_event_location_city">City</label>
+                            <input type="text" id="scn_event_location_city" name="scn_event_location_city" placeholder="City">
+                        </div>
+                        <div class="scn-form-group">
+                            <label for="scn_event_location_region">State/Region</label>
+                            <input type="text" id="scn_event_location_region" name="scn_event_location_region" placeholder="State/Region">
+                        </div>
+                        <div class="scn-form-group">
+                            <label for="scn_event_location_country">Country</label>
+                            <input type="text" id="scn_event_location_country" name="scn_event_location_country" placeholder="Country">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scn-form-section">
+                    <h3><span class="dashicons dashicons-calendar"></span>Dates</h3>
+                    <div class="scn-form-grid">
+                        <div class="scn-form-group">
+                            <label for="scn_event_start_date">Start Date <span class="required">*</span></label>
+                            <input type="date" id="scn_event_start_date" name="scn_event_start_date" required>
+                        </div>
+                        <div class="scn-form-group">
+                            <label for="scn_event_end_date">End Date</label>
+                            <input type="date" id="scn_event_end_date" name="scn_event_end_date">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scn-form-section">
+                    <h3><span class="dashicons dashicons-admin-links"></span>Website</h3>
+                    <div class="scn-form-grid">
+                        <div class="scn-form-group full-width">
+                            <label for="scn_event_website">Event Website URL</label>
+                            <input type="url" id="scn_event_website" name="scn_event_website" placeholder="https://">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="scn-modal-footer">
+            <button type="submit" form="scn-add-event-form" class="scn-btn scn-btn-primary scn-save-event">
+                <span class="dashicons dashicons-yes-alt"></span>
+                <?php _e('Create Event', 'scn-membership'); ?>
             </button>
             <button type="button" class="scn-btn scn-btn-secondary scn-modal-close">
                 <?php _e('Cancel', 'scn-membership'); ?>
@@ -1993,49 +2053,6 @@ jQuery(document).ready(function($) {
 
     // Load courses function
     function loadCourses() {
-        // Load available courses
-        $.ajax({
-            url: scnDashboard.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'scn_get_available_courses',
-                nonce: scnDashboard.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#scn-available-courses').html(response.data);
-                } else {
-                    $('#scn-available-courses').html('<div class="scn-no-courses">No courses available</div>');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error loading available courses:', error);
-                $('#scn-available-courses').html('<div class="scn-no-courses">Error loading courses: ' + error + '</div>');
-            }
-        });
-
-        // Load enrolled courses
-        $.ajax({
-            url: scnDashboard.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'scn_get_enrolled_courses',
-                nonce: scnDashboard.nonce,
-                profile_id: $('.scn-dashboard-container').data('profile-id')
-            },
-            success: function(response) {
-                if (response.success) {
-                    $('#scn-enrolled-courses').html(response.data);
-                } else {
-                    $('#scn-enrolled-courses').html('<div class="scn-no-courses">No enrolled courses</div>');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX Error loading enrolled courses:', error);
-                $('#scn-enrolled-courses').html('<div class="scn-no-courses">Error loading enrolled courses: ' + error + '</div>');
-            }
-        });
-
         // Load created courses
         $.ajax({
             url: scnDashboard.ajaxUrl,
@@ -2058,47 +2075,6 @@ jQuery(document).ready(function($) {
             }
         });
     }
-
-    // Handle course enrollment
-    $(document).on('click', '.scn-enroll-btn', function() {
-        const $btn = $(this);
-        const courseId = $btn.data('course-id');
-        
-        if (!courseId) {
-            alert('Invalid course ID');
-            return;
-        }
-        
-        $btn.addClass('loading').prop('disabled', true);
-        
-        $.ajax({
-            url: scnDashboard.ajaxUrl,
-            type: 'POST',
-            data: {
-                action: 'scn_enroll_course',
-                nonce: scnDashboard.nonce,
-                course_id: courseId
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Update button to show enrolled state
-                    $btn.removeClass('loading').text('Enrolled').prop('disabled', true);
-                    alert('Successfully enrolled in course!');
-                    
-                    // Reload all course sections to update the display
-                    loadCourses();
-                } else {
-                    $btn.removeClass('loading').prop('disabled', false);
-                    alert('Error enrolling in course: ' + (response.data || 'Unknown error'));
-                }
-            },
-            error: function(xhr, status, error) {
-                $btn.removeClass('loading').prop('disabled', false);
-                console.error('AJAX Error enrolling in course:', error);
-                alert('Error enrolling in course: ' + error);
-            }
-        });
-    });
 
     // Load courses on page load
     loadCourses();

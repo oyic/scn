@@ -21,6 +21,13 @@ class ProfileDashboard {
         add_action('wp_ajax_scn_get_created_courses', [$this, 'handleGetCreatedCoursesAjax']);
         add_action('wp_ajax_scn_create_course', [$this, 'handleCreateCourseAjax']);
         add_action('wp_ajax_scn_enroll_course', [$this, 'handleEnrollCourseAjax']);
+        add_action('wp_ajax_scn_get_created_events', [$this, 'handleGetCreatedEventsAjax']);
+        add_action('wp_ajax_scn_create_event', [$this, 'handleCreateEventAjax']);
+        add_action('wp_ajax_update_basic_info', [$this, 'handleUpdateBasicInfoAjax']);
+        add_action('wp_ajax_update_social_links', [$this, 'handleUpdateSocialLinksAjax']);
+        add_action('wp_ajax_update_profile_image', [$this, 'handleUpdateProfileImageAjax']);
+        add_action('wp_ajax_upload_profile_image_temp', [$this, 'handleUploadProfileImageTempAjax']);
+        add_action('wp_ajax_upload_profile_image_direct', [$this, 'handleUploadProfileImageDirectAjax']);
         // add_shortcode('scn_member_dashboard', [$this, 'renderDashboardShortcode']); // Removed - handled by AuthShortcodes
         add_action('init', [$this, 'addRewriteRules']);
         add_filter('query_vars', [$this, 'addQueryVars']);
@@ -1245,20 +1252,14 @@ class ProfileDashboard {
         $user_id = get_current_user_id();
         $profile_id = intval($_POST['profile_id']);
         
-        // Get courses created by this user
+        // Get courses created by this user (using post_author, not meta)
         $courses = get_posts([
             'post_type' => 'scn_course',
             'post_status' => ['publish', 'draft', 'pending'],
-            'posts_per_page' => 10,
+            'posts_per_page' => -1,
+            'author' => $user_id,
             'orderby' => 'date',
-            'order' => 'DESC',
-            'meta_query' => [
-                [
-                    'key' => 'course_author',
-                    'value' => $user_id,
-                    'compare' => '='
-                ]
-            ]
+            'order' => 'DESC'
         ]);
 
         $html = '';
@@ -1603,5 +1604,678 @@ class ProfileDashboard {
         });
 
         return array_slice($activity, 0, $limit);
+    }
+
+    // Event AJAX Handlers
+    public function handleGetCreatedEventsAjax() {
+        try {
+            check_ajax_referer('scn_dashboard_nonce', 'nonce');
+            
+            if (!is_user_logged_in()) {
+                wp_die(__('You must be logged in.', 'scn-membership'));
+            }
+
+            $user_id = get_current_user_id();
+
+            // Get user's created events
+            $events = get_posts([
+                'post_type' => 'scn_event',
+                'author' => $user_id,
+                'posts_per_page' => -1,
+                'post_status' => ['publish', 'draft', 'pending'],
+                'orderby' => 'date',
+                'order' => 'DESC'
+            ]);
+
+            if (empty($events)) {
+                wp_send_json_success('<tr><td colspan="5" class="scn-no-data">' . __('You haven\'t created any events yet.', 'scn-membership') . '</td></tr>');
+                return;
+            }
+
+            $html = '';
+            foreach ($events as $event) {
+                $event_name = get_post_meta($event->ID, 'scn_event_name', true) ?: $event->post_title;
+                $location_city = get_post_meta($event->ID, 'scn_event_location_city', true);
+                $location_region = get_post_meta($event->ID, 'scn_event_location_region', true);
+                $dates = get_post_meta($event->ID, 'scn_event_dates', true);
+                $start_date = !empty($dates['start']) ? date('M j, Y', strtotime($dates['start'])) : 'N/A';
+                
+                $location = $location_city ? $location_city : 'N/A';
+                if ($location_region) {
+                    $location .= ', ' . $location_region;
+                }
+                
+                // Status badge
+                $status_class = 'scn-status-' . $event->post_status;
+                $status_text = ucfirst($event->post_status);
+                
+                $html .= '<tr>';
+                $html .= '<td><strong>' . esc_html($event_name) . '</strong></td>';
+                $html .= '<td>' . esc_html($location) . '</td>';
+                $html .= '<td>' . esc_html($start_date) . '</td>';
+                $html .= '<td><span class="scn-status-badge ' . esc_attr($status_class) . '">' . esc_html($status_text) . '</span></td>';
+                $html .= '<td class="scn-actions">';
+                $html .= '<a href="' . get_permalink($event->ID) . '" class="scn-btn scn-btn-sm scn-btn-secondary" target="_blank">View</a> ';
+                $html .= '<a href="' . admin_url('post.php?post=' . $event->ID . '&action=edit') . '" class="scn-btn scn-btn-sm scn-btn-primary">Edit</a>';
+                $html .= '</td>';
+                $html .= '</tr>';
+            }
+
+            wp_send_json_success($html);
+        } catch (\Exception $e) {
+            error_log('SCN Created Events Error: ' . $e->getMessage());
+            wp_send_json_error('Error loading created events: ' . $e->getMessage());
+        }
+    }
+
+    public function handleCreateEventAjax() {
+        check_ajax_referer('scn_dashboard_nonce', 'nonce');
+        
+        if (!is_user_logged_in()) {
+            wp_die(__('You must be logged in.', 'scn-membership'));
+        }
+
+        $user_id = get_current_user_id();
+        
+        // Get form data
+        $event_name = sanitize_text_field($_POST['scn_event_name']);
+        $official_name = sanitize_text_field($_POST['scn_event_official_name']);
+        $location_city = sanitize_text_field($_POST['scn_event_location_city']);
+        $location_region = sanitize_text_field($_POST['scn_event_location_region']);
+        $location_country = sanitize_text_field($_POST['scn_event_location_country']);
+        $start_date = sanitize_text_field($_POST['scn_event_start_date']);
+        $end_date = sanitize_text_field($_POST['scn_event_end_date']);
+        $website = esc_url_raw($_POST['scn_event_website']);
+        $description = sanitize_textarea_field($_POST['scn_event_description']);
+
+        if (empty($event_name) || empty($start_date)) {
+            wp_send_json_error('Event name and start date are required');
+        }
+
+        // Create event post
+        $event_data = [
+            'post_title' => $official_name ?: $event_name,
+            'post_content' => $description,
+            'post_type' => 'scn_event',
+            'post_status' => 'draft',
+            'post_author' => $user_id
+        ];
+
+        $event_id = wp_insert_post($event_data);
+
+        if (is_wp_error($event_id)) {
+            wp_send_json_error('Failed to create event');
+        }
+
+        // Save event meta fields
+        update_post_meta($event_id, 'scn_event_name', $event_name);
+        update_post_meta($event_id, 'scn_event_official_name', $official_name);
+        update_post_meta($event_id, 'scn_event_location_city', $location_city);
+        update_post_meta($event_id, 'scn_event_location_region', $location_region);
+        update_post_meta($event_id, 'scn_event_location_country', $location_country);
+        update_post_meta($event_id, 'scn_event_website', $website);
+        
+        // Save dates
+        $dates = [
+            'start' => $start_date,
+            'end' => $end_date
+        ];
+        update_post_meta($event_id, 'scn_event_dates', $dates);
+        
+        // Save year based on start date
+        $year = date('Y', strtotime($start_date));
+        update_post_meta($event_id, 'scn_event_year', $year);
+
+        wp_send_json_success('Event created successfully');
+    }
+
+    /**
+     * Handle AJAX request to update basic profile information
+     */
+    public function handleUpdateBasicInfoAjax() {
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update_basic_info')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in to update your profile');
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+
+        if (!$profile_id) {
+            wp_send_json_error('Invalid profile ID');
+            return;
+        }
+
+        // Verify that the profile belongs to the current user
+        $profile = get_post($profile_id);
+        if (!$profile || $profile->post_type !== 'scn_profile') {
+            wp_send_json_error('Invalid profile');
+            return;
+        }
+
+        $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        if ($user_id != $profile_user_id) {
+            wp_send_json_error('You do not have permission to edit this profile');
+            return;
+        }
+
+        // Sanitize and validate input
+        $first_name = isset($_POST['first_name']) ? sanitize_text_field($_POST['first_name']) : '';
+        $last_name = isset($_POST['last_name']) ? sanitize_text_field($_POST['last_name']) : '';
+        $credentials = isset($_POST['credentials']) ? sanitize_text_field($_POST['credentials']) : '';
+        $location = isset($_POST['location']) ? sanitize_text_field($_POST['location']) : '';
+        $main_url = isset($_POST['main_url']) ? esc_url_raw($_POST['main_url']) : '';
+
+        if (empty($first_name) || empty($last_name)) {
+            wp_send_json_error('First name and last name are required');
+            return;
+        }
+
+        // Update profile meta
+        update_post_meta($profile_id, 'scn_first_name', $first_name);
+        update_post_meta($profile_id, 'scn_last_name', $last_name);
+        update_post_meta($profile_id, 'scn_credentials', $credentials);
+        update_post_meta($profile_id, 'scn_location', $location);
+        update_post_meta($profile_id, 'scn_main_url', $main_url);
+
+        // Update post title with new name
+        $new_title = $first_name . ' ' . $last_name;
+        if ($credentials) {
+            $new_title .= ', ' . $credentials;
+        }
+
+        wp_update_post([
+            'ID' => $profile_id,
+            'post_title' => $new_title
+        ]);
+
+        wp_send_json_success('Profile updated successfully');
+    }
+
+    /**
+     * Handle AJAX request to update social links
+     */
+    public function handleUpdateSocialLinksAjax() {
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update_social_links')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in to update your profile');
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+
+        if (!$profile_id) {
+            wp_send_json_error('Invalid profile ID');
+            return;
+        }
+
+        // Verify that the profile belongs to the current user
+        $profile = get_post($profile_id);
+        if (!$profile || $profile->post_type !== 'scn_profile') {
+            wp_send_json_error('Invalid profile');
+            return;
+        }
+
+        $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        if ($user_id != $profile_user_id) {
+            wp_send_json_error('You do not have permission to edit this profile');
+            return;
+        }
+
+        // Sanitize and validate input
+        $linkedin = isset($_POST['linkedin']) ? esc_url_raw($_POST['linkedin']) : '';
+        $twitter = isset($_POST['twitter']) ? esc_url_raw($_POST['twitter']) : '';
+        $facebook = isset($_POST['facebook']) ? esc_url_raw($_POST['facebook']) : '';
+        $instagram = isset($_POST['instagram']) ? esc_url_raw($_POST['instagram']) : '';
+        $youtube = isset($_POST['youtube']) ? esc_url_raw($_POST['youtube']) : '';
+        $website = isset($_POST['website']) ? esc_url_raw($_POST['website']) : '';
+
+        // Build social links array
+        $social_links = [
+            'linkedin' => $linkedin,
+            'twitter' => $twitter,
+            'facebook' => $facebook,
+            'instagram' => $instagram,
+            'youtube' => $youtube,
+            'website' => $website
+        ];
+
+        // Update social links meta
+        update_post_meta($profile_id, 'scn_social_links', $social_links);
+
+        wp_send_json_success('Social links updated successfully');
+    }
+
+    /**
+     * Handle AJAX request to update profile image with cropping
+     */
+    public function handleUpdateProfileImageAjax() {
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update_profile_image')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in to update your profile');
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+        $attachment_id = isset($_POST['attachment_id']) ? intval($_POST['attachment_id']) : 0;
+
+        if (!$profile_id || !$attachment_id) {
+            wp_send_json_error('Invalid profile or attachment ID');
+            return;
+        }
+
+        // Verify that the profile belongs to the current user
+        $profile = get_post($profile_id);
+        if (!$profile || $profile->post_type !== 'scn_profile') {
+            wp_send_json_error('Invalid profile');
+            return;
+        }
+
+        $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        if ($user_id != $profile_user_id) {
+            wp_send_json_error('You do not have permission to edit this profile');
+            return;
+        }
+
+        // Get profile information for filename and alt text
+        $first_name = get_post_meta($profile_id, 'scn_first_name', true);
+        $last_name = get_post_meta($profile_id, 'scn_last_name', true);
+        $credentials = get_post_meta($profile_id, 'scn_credentials', true);
+        
+        // Create filename from name
+        $name_slug = sanitize_title($first_name . '-' . $last_name);
+        if ($credentials) {
+            $name_slug .= '-' . sanitize_title($credentials);
+        }
+        
+        // Create alt text
+        $alt_text = 'Profile Photo of ' . $first_name . ' ' . $last_name;
+        if ($credentials) {
+            $alt_text .= ', ' . $credentials;
+        }
+
+        // Check if cropping data is provided
+        $crop_x = isset($_POST['crop_x']) ? floatval($_POST['crop_x']) : 0;
+        $crop_y = isset($_POST['crop_y']) ? floatval($_POST['crop_y']) : 0;
+        $crop_width = isset($_POST['crop_width']) ? floatval($_POST['crop_width']) : 0;
+        $crop_height = isset($_POST['crop_height']) ? floatval($_POST['crop_height']) : 0;
+
+        // If crop data exists, create a cropped version
+        if ($crop_width > 0 && $crop_height > 0) {
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            
+            $src_file = get_attached_file($attachment_id);
+            if (!$src_file) {
+                wp_send_json_error('Attachment file not found');
+                return;
+            }
+
+            // Load image editor
+            $image = wp_get_image_editor($src_file);
+            if (is_wp_error($image)) {
+                wp_send_json_error('Unable to load image editor: ' . $image->get_error_message());
+                return;
+            }
+
+            // Crop the image
+            $image->crop($crop_x, $crop_y, $crop_width, $crop_height, 500, 500);
+            
+            // Save the cropped image with descriptive filename
+            $upload_dir = wp_upload_dir();
+            $filename = $name_slug . '.jpg';
+            $new_file = trailingslashit($upload_dir['path']) . $filename;
+            
+            $saved = $image->save($new_file);
+            if (is_wp_error($saved)) {
+                wp_send_json_error('Unable to save cropped image: ' . $saved->get_error_message());
+                return;
+            }
+            
+            // Get the saved file path
+            $saved_file = is_array($saved) ? $saved['path'] : $new_file;
+
+            // Create attachment for the cropped image
+            $wp_filetype = wp_check_filetype($saved_file, null);
+            $attachment = array(
+                'guid' => trailingslashit($upload_dir['url']) . basename($saved_file),
+                'post_mime_type' => $wp_filetype['type'],
+                'post_title' => $first_name . ' ' . $last_name . ($credentials ? ', ' . $credentials : ''),
+                'post_content' => '',
+                'post_status' => 'inherit'
+            );
+            
+            $cropped_attachment_id = wp_insert_attachment($attachment, $saved_file, $profile_id);
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            $attach_data = wp_generate_attachment_metadata($cropped_attachment_id, $saved_file);
+            wp_update_attachment_metadata($cropped_attachment_id, $attach_data);
+            
+            // Set alt text for the image
+            update_post_meta($cropped_attachment_id, '_wp_attachment_image_alt', $alt_text);
+            
+            $attachment_id = $cropped_attachment_id;
+        } else {
+            // If no cropping, just update the alt text of the existing attachment
+            update_post_meta($attachment_id, '_wp_attachment_image_alt', $alt_text);
+        }
+
+        // Get old featured image
+        $old_thumbnail_id = get_post_thumbnail_id($profile_id);
+        
+        // Set as featured image (thumbnail)
+        set_post_thumbnail($profile_id, $attachment_id);
+        
+        // Delete old thumbnail if it's different
+        if ($old_thumbnail_id && $old_thumbnail_id != $attachment_id) {
+            wp_delete_attachment($old_thumbnail_id, true);
+        }
+
+        wp_send_json_success('Profile image updated successfully');
+    }
+
+    /**
+     * Handle AJAX request to upload profile image temporarily (for cropping)
+     */
+    public function handleUploadProfileImageTempAjax() {
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'upload_profile_image_temp')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in');
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+
+        if (!$profile_id) {
+            wp_send_json_error('Invalid profile ID');
+            return;
+        }
+
+        // Verify permission
+        $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        if ($user_id != $profile_user_id) {
+            wp_send_json_error('Permission denied');
+            return;
+        }
+
+        // Handle file upload
+        if (!function_exists('wp_handle_upload')) {
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+        }
+
+        $uploadedfile = $_FILES['file'];
+        $upload_overrides = ['test_form' => false];
+        $movefile = wp_handle_upload($uploadedfile, $upload_overrides);
+
+        if ($movefile && !isset($movefile['error'])) {
+            // Verify file exists
+            if (!file_exists($movefile['file'])) {
+                wp_send_json_error('File upload failed - file not found at: ' . $movefile['file']);
+                return;
+            }
+            
+            // Create attachment
+            $filename = $movefile['file'];
+            $filetype = wp_check_filetype(basename($filename), null);
+            
+            $attachment = [
+                'guid' => $movefile['url'],
+                'post_mime_type' => $filetype['type'],
+                'post_title' => sanitize_file_name(basename($filename)),
+                'post_content' => '',
+                'post_status' => 'inherit'
+            ];
+            
+            $attach_id = wp_insert_attachment($attachment, $filename, $profile_id);
+            
+            if (!$attach_id || is_wp_error($attach_id)) {
+                wp_send_json_error('Failed to create attachment');
+                return;
+            }
+            
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            $attach_data = wp_generate_attachment_metadata($attach_id, $filename);
+            wp_update_attachment_metadata($attach_id, $attach_data);
+            
+            // Get the actual URL from the attachment
+            $attachment_url = wp_get_attachment_url($attach_id);
+            
+            wp_send_json_success([
+                'attachment_id' => $attach_id,
+                'url' => $attachment_url ? $attachment_url : $movefile['url']
+            ]);
+        } else {
+            wp_send_json_error($movefile['error']);
+        }
+    }
+
+    /**
+     * Handle AJAX request to upload profile image directly (without cropping)
+     */
+    public function handleUploadProfileImageDirectAjax() {
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'upload_profile_image_direct')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in');
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+
+        if (!$profile_id) {
+            wp_send_json_error('Invalid profile ID');
+            return;
+        }
+
+        // Verify permission
+        $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        if ($user_id != $profile_user_id) {
+            wp_send_json_error('Permission denied');
+            return;
+        }
+
+        // Get profile info for filename and alt text
+        $first_name = get_post_meta($profile_id, 'scn_first_name', true);
+        $last_name = get_post_meta($profile_id, 'scn_last_name', true);
+        $credentials = get_post_meta($profile_id, 'scn_credentials', true);
+        
+        error_log('Profile data - First: ' . $first_name . ', Last: ' . $last_name . ', Credentials: ' . ($credentials ?: 'EMPTY'));
+        
+        $name_slug = sanitize_title($first_name . '-' . $last_name);
+        if ($credentials) {
+            $name_slug .= '-' . sanitize_title($credentials);
+        }
+        
+        error_log('Generated name_slug: ' . $name_slug);
+        
+        $alt_text = 'Profile Photo of ' . $first_name . ' ' . $last_name;
+        if ($credentials) {
+            $alt_text .= ', ' . $credentials;
+        }
+
+        // Handle file upload
+        if (!function_exists('wp_handle_upload')) {
+            require_once(ABSPATH . 'wp-admin/includes/file.php');
+        }
+        
+        // Check if file was uploaded
+        if (!isset($_FILES['file']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
+            wp_send_json_error('No file uploaded or file upload error');
+            return;
+        }
+
+        // Store original name and get extension
+        $original_name = $_FILES['file']['name'];
+        $file_ext = pathinfo($original_name, PATHINFO_EXTENSION);
+        
+        // Set desired filename: {name-slug}-photo.{ext}
+        $desired_filename = $name_slug . '-photo.' . $file_ext;
+        
+        error_log('Uploading file: ' . $original_name . ' for profile: ' . $profile_id);
+        error_log('Desired filename: ' . $desired_filename);
+        
+        // Modify the uploaded file name before WordPress processes it
+        $_FILES['file']['name'] = $desired_filename;
+        
+        $uploadedfile = $_FILES['file'];
+        $upload_overrides = ['test_form' => false];
+        $movefile = wp_handle_upload($uploadedfile, $upload_overrides);
+        
+        error_log('Upload result: ' . print_r($movefile, true));
+
+        if ($movefile && !isset($movefile['error'])) {
+            $uploaded_file = $movefile['file'];
+            $uploaded_url = $movefile['url'];
+            $uploaded_type = $movefile['type'];
+            
+            error_log('=== UPLOAD SUCCESS ===');
+            error_log('Uploaded file path: ' . $uploaded_file);
+            error_log('Uploaded file URL: ' . $uploaded_url);
+            
+            // CRITICAL: Check file exists IMMEDIATELY after upload
+            clearstatcache(true, $uploaded_file);
+            $file_exists_now = file_exists($uploaded_file);
+            error_log('File exists IMMEDIATELY after wp_handle_upload: ' . ($file_exists_now ? 'YES' : 'NO'));
+            
+            if (!$file_exists_now) {
+                error_log('CRITICAL ERROR: File disappeared immediately after upload!');
+                error_log('Checking directory contents:');
+                $upload_dir = dirname($uploaded_file);
+                $files = scandir($upload_dir);
+                error_log('Files in upload dir: ' . print_r($files, true));
+            }
+            
+            // Verify file exists
+            if (!file_exists($uploaded_file)) {
+                error_log('ERROR: Uploaded file not found at: ' . $uploaded_file);
+                wp_send_json_error('File upload failed - uploaded file not found');
+                return;
+            }
+            
+            // Use the uploaded file directly (no rename to avoid issues)
+            $attachment = [
+                'guid' => $uploaded_url,
+                'post_mime_type' => $uploaded_type,
+                'post_title' => $first_name . ' ' . $last_name . ($credentials ? ', ' . $credentials : ''),
+                'post_name' => $name_slug, // This sets the attachment slug
+                'post_content' => '',
+                'post_status' => 'inherit'
+            ];
+            
+            error_log('Creating attachment with data: ' . print_r($attachment, true));
+            
+            $attach_id = wp_insert_attachment($attachment, $uploaded_file, $profile_id);
+            
+            if (!$attach_id || is_wp_error($attach_id)) {
+                $error_message = is_wp_error($attach_id) ? $attach_id->get_error_message() : 'Failed to create attachment';
+                error_log('ERROR creating attachment: ' . $error_message);
+                wp_send_json_error($error_message);
+                return;
+            }
+            
+            error_log('Attachment created successfully with ID: ' . $attach_id);
+            
+            // Get old featured image BEFORE generating metadata
+            $old_thumbnail_id = get_post_thumbnail_id($profile_id);
+            error_log('Old thumbnail ID: ' . ($old_thumbnail_id ?: 'none'));
+            
+            // Get old file path if exists
+            $old_file_path = null;
+            if ($old_thumbnail_id) {
+                $old_file_path = get_attached_file($old_thumbnail_id);
+                error_log('Old file path: ' . ($old_file_path ?: 'none'));
+            }
+            
+            // Check file before setting thumbnail
+            clearstatcache(true, $uploaded_file);
+            error_log('File exists BEFORE set_post_thumbnail: ' . (file_exists($uploaded_file) ? 'YES' : 'NO'));
+            
+            // Set as featured image FIRST (before generating metadata)
+            set_post_thumbnail($profile_id, $attach_id);
+            error_log('Set new thumbnail ID: ' . $attach_id);
+            
+            // Check file AFTER setting thumbnail
+            clearstatcache(true, $uploaded_file);
+            error_log('File exists AFTER set_post_thumbnail: ' . (file_exists($uploaded_file) ? 'YES' : 'NO'));
+            
+            // Get the ACTUAL file path WordPress stored (it may have been renamed!)
+            $actual_file_path = get_attached_file($attach_id);
+            error_log('Attachment ' . $attach_id . ' actual file path: ' . $actual_file_path);
+            
+            if (!$actual_file_path || !file_exists($actual_file_path)) {
+                error_log('ERROR: Actual file not found at: ' . $actual_file_path);
+                wp_send_json_error('File was uploaded but disappeared');
+                return;
+            }
+            
+            error_log('Actual file exists: YES');
+            
+            // Now generate metadata using the ACTUAL file path
+            require_once(ABSPATH . 'wp-admin/includes/image.php');
+            error_log('Generating attachment metadata for: ' . $actual_file_path);
+            $attach_data = wp_generate_attachment_metadata($attach_id, $actual_file_path);
+            error_log('Metadata generated: ' . print_r($attach_data, true));
+            wp_update_attachment_metadata($attach_id, $attach_data);
+            
+            // Set alt text
+            update_post_meta($attach_id, '_wp_attachment_image_alt', $alt_text);
+            
+            // Delete old thumbnail ONLY if it's different AND doesn't share the same file
+            if ($old_thumbnail_id && $old_thumbnail_id != $attach_id) {
+                // Double-check files are different before deleting (use ACTUAL path)
+                if ($old_file_path && $old_file_path !== $actual_file_path) {
+                    error_log('Deleting old attachment ID: ' . $old_thumbnail_id . ' (file: ' . $old_file_path . ')');
+                    wp_delete_attachment($old_thumbnail_id, true);
+                } else {
+                    error_log('Skipping old attachment deletion - same file path: ' . $old_file_path);
+                }
+            }
+            
+            // Get the new image URL
+            $new_image_url = wp_get_attachment_image_url($attach_id, 'large');
+            
+            error_log('Upload successful! New image URL: ' . $new_image_url);
+            
+            wp_send_json_success([
+                'message' => 'Profile image uploaded successfully',
+                'image_url' => $new_image_url,
+                'attachment_id' => $attach_id
+            ]);
+        } else {
+            error_log('Upload failed: ' . (isset($movefile['error']) ? $movefile['error'] : 'Unknown error'));
+            wp_send_json_error(isset($movefile['error']) ? $movefile['error'] : 'Upload failed');
+        }
     }
 }
