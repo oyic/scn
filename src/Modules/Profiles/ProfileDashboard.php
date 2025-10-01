@@ -1836,23 +1836,69 @@ class ProfileDashboard {
             return;
         }
 
-        // Sanitize and validate input
-        $linkedin = isset($_POST['linkedin']) ? esc_url_raw($_POST['linkedin']) : '';
-        $twitter = isset($_POST['twitter']) ? esc_url_raw($_POST['twitter']) : '';
-        $facebook = isset($_POST['facebook']) ? esc_url_raw($_POST['facebook']) : '';
-        $instagram = isset($_POST['instagram']) ? esc_url_raw($_POST['instagram']) : '';
-        $youtube = isset($_POST['youtube']) ? esc_url_raw($_POST['youtube']) : '';
-        $website = isset($_POST['website']) ? esc_url_raw($_POST['website']) : '';
+        // Check if new format (JSON) or old format (individual fields)
+        if (isset($_POST['social_links'])) {
+            // New repeater format - JSON string
+            $social_links_json = stripslashes($_POST['social_links']);
+            $social_links_data = json_decode($social_links_json, true);
+            
+            if (!is_array($social_links_data)) {
+                wp_send_json_error('Invalid social links data');
+                return;
+            }
+            
+            // Sanitize each link
+            $social_links = [];
+            foreach ($social_links_data as $link) {
+                if (isset($link['url']) && !empty($link['url'])) {
+                    $social_links[] = [
+                        'platform' => sanitize_key($link['platform'] ?? 'custom'),
+                        'label' => sanitize_text_field($link['label'] ?? ''),
+                        'url' => esc_url_raw($link['url']),
+                        'icon' => sanitize_key($link['icon'] ?? 'custom'),
+                        'order' => intval($link['order'] ?? 0)
+                    ];
+                }
+            }
+            
+            // Sort by order
+            usort($social_links, function($a, $b) {
+                return $a['order'] - $b['order'];
+            });
+            
+        } else {
+            // Old format - individual fields (backward compatibility)
+            $linkedin = isset($_POST['linkedin']) ? esc_url_raw($_POST['linkedin']) : '';
+            $twitter = isset($_POST['twitter']) ? esc_url_raw($_POST['twitter']) : '';
+            $facebook = isset($_POST['facebook']) ? esc_url_raw($_POST['facebook']) : '';
+            $instagram = isset($_POST['instagram']) ? esc_url_raw($_POST['instagram']) : '';
+            $youtube = isset($_POST['youtube']) ? esc_url_raw($_POST['youtube']) : '';
+            $website = isset($_POST['website']) ? esc_url_raw($_POST['website']) : '';
 
-        // Build social links array
-        $social_links = [
-            'linkedin' => $linkedin,
-            'twitter' => $twitter,
-            'facebook' => $facebook,
-            'instagram' => $instagram,
-            'youtube' => $youtube,
-            'website' => $website
-        ];
+            // Convert to new format
+            $social_links = [];
+            $order = 0;
+            $platform_map = [
+                'linkedin' => ['label' => 'LinkedIn', 'url' => $linkedin],
+                'twitter' => ['label' => 'Twitter / X', 'url' => $twitter],
+                'facebook' => ['label' => 'Facebook', 'url' => $facebook],
+                'instagram' => ['label' => 'Instagram', 'url' => $instagram],
+                'youtube' => ['label' => 'YouTube', 'url' => $youtube],
+                'website' => ['label' => 'Website', 'url' => $website]
+            ];
+            
+            foreach ($platform_map as $platform => $info) {
+                if (!empty($info['url'])) {
+                    $social_links[] = [
+                        'platform' => $platform,
+                        'label' => $info['label'],
+                        'url' => $info['url'],
+                        'icon' => $platform,
+                        'order' => $order++
+                    ];
+                }
+            }
+        }
 
         // Update social links meta
         update_post_meta($profile_id, 'scn_social_links', $social_links);
