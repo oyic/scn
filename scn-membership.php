@@ -47,6 +47,11 @@ class SCN_Membership_Bootstrap {
     }
 
     public function init() {
+        // ACF code completely removed - let ACF run natively
+        
+        // Force classic editor for member post types
+        add_filter('use_block_editor_for_post_type', [$this, 'forceClassicEditorForMembers'], 10, 2);
+        
         if (class_exists('SCN\\Membership\\Core\\Plugin')) {
             $this->checkVersion();
             
@@ -77,10 +82,10 @@ class SCN_Membership_Bootstrap {
             add_action('init', [$this, 'ensureSampleTopics'], 20);
         add_action('init', [$this, 'createMembersProfilePage'], 30);
             
-            // Register WP-CLI commands
-            if (defined('WP_CLI') && WP_CLI) {
-                \WP_CLI::add_command('scn events', 'SCN\\Membership\\Cli\\EventsCommand');
-            }
+                    // Register WP-CLI commands
+                    if (defined('WP_CLI') && constant('WP_CLI') && class_exists('WP_CLI')) {
+                        \WP_CLI::add_command('scn events', 'SCN\\Membership\\Cli\\EventsCommand');
+                    }
         }
     }
 
@@ -631,21 +636,166 @@ JS);
 
     private function ensureProfileMetaboxOnly() {
         add_action('admin_init', function() {
-            if (post_type_exists('scn_profile')) {
-                remove_post_type_support('scn_profile', 'title');
-                remove_post_type_support('scn_profile', 'editor');
+            if (post_type_exists('member')) {
+                // Keep title support but make it readonly
+                // remove_post_type_support('member', 'title');
+                remove_post_type_support('member', 'editor');
             }
+        });
+        
+        // Make title field readonly and add real-time auto-generation
+        add_action('admin_head-post.php', function() {
+            global $post_type;
+            if ($post_type === 'member') {
+                echo '<style>
+                    #title-prompt-text { display: none !important; }
+                    #title { 
+                        background-color: #f0f0f0 !important; 
+                        cursor: not-allowed !important;
+                        pointer-events: none !important;
+                    }
+                </style>';
+                echo '<script>
+                    jQuery(document).ready(function($) {
+                        $("#title").attr("readonly", true);
+                        $("#title").attr("placeholder", "Auto-generated from First Name, Last Name, Credentials");
+                        
+                        // Function to generate title from ACF fields in basic_info group
+                        function updateMemberTitle() {
+                            var firstName = "";
+                            var lastName = "";
+                            var credentials = "";
+                            
+                            // Fields are in basic_info group: acf[field_basic_info][first_name]
+                            var firstNameField = $("input[name*=\'basic_info\'][name*=\'first_name\']");
+                            var lastNameField = $("input[name*=\'basic_info\'][name*=\'last_name\']");
+                            var credentialsField = $("input[name*=\'basic_info\'][name*=\'credentials\']");
+                            
+                            console.log("First Name Field Found:", firstNameField.length);
+                            console.log("Last Name Field Found:", lastNameField.length);
+                            console.log("Credentials Field Found:", credentialsField.length);
+                            
+                            if (firstNameField.length) {
+                                firstName = $.trim(firstNameField.val() || "");
+                                lastName = $.trim(lastNameField.val() || "");
+                                credentials = $.trim(credentialsField.val() || "");
+                                
+                                console.log("Values - First:", firstName, "Last:", lastName, "Creds:", credentials);
+                            }
+                            
+                            // Generate title: FIRSTNAME LASTNAME, credentials
+                            if (firstName && lastName) {
+                                var title = firstName.toUpperCase() + " " + lastName.toUpperCase();
+                                if (credentials) {
+                                    title += ", " + credentials;
+                                }
+                                console.log("Generated Title:", title);
+                                $("#title").val(title);
+                                $("#title-prompt-text").hide();
+                            } else {
+                                console.log("Not enough data to generate title");
+                            }
+                        }
+                        
+                        // Watch for changes on ACF fields in basic_info group
+                        $(document).on("input change blur keyup", "input[name*=\'basic_info\'][name*=\'first_name\'], input[name*=\'basic_info\'][name*=\'last_name\'], input[name*=\'basic_info\'][name*=\'credentials\']", function() {
+                            console.log("Field changed:", $(this).attr("name"));
+                            updateMemberTitle();
+                        });
+                        
+                        // Also trigger on initial load
+                        setTimeout(updateMemberTitle, 500);
+                    });
+                </script>';
+            }
+        });
+        
+        add_action('admin_head-post-new.php', function() {
+            global $post_type;
+            if ($post_type === 'member') {
+                echo '<style>
+                    #title-prompt-text { display: none !important; }
+                    #title { 
+                        background-color: #f0f0f0 !important; 
+                        cursor: not-allowed !important;
+                        pointer-events: none !important;
+                    }
+                </style>';
+                echo '<script>
+                    jQuery(document).ready(function($) {
+                        $("#title").attr("readonly", true);
+                        $("#title").attr("placeholder", "Auto-generated from First Name, Last Name, Credentials");
+                        
+                        // Function to generate title from ACF fields in basic_info group
+                        function updateMemberTitle() {
+                            var firstName = "";
+                            var lastName = "";
+                            var credentials = "";
+                            
+                            // Fields are in basic_info group: acf[field_basic_info][first_name]
+                            var firstNameField = $("input[name*=\'basic_info\'][name*=\'first_name\']");
+                            var lastNameField = $("input[name*=\'basic_info\'][name*=\'last_name\']");
+                            var credentialsField = $("input[name*=\'basic_info\'][name*=\'credentials\']");
+                            
+                            console.log("First Name Field Found:", firstNameField.length);
+                            console.log("Last Name Field Found:", lastNameField.length);
+                            console.log("Credentials Field Found:", credentialsField.length);
+                            
+                            if (firstNameField.length) {
+                                firstName = $.trim(firstNameField.val() || "");
+                                lastName = $.trim(lastNameField.val() || "");
+                                credentials = $.trim(credentialsField.val() || "");
+                                
+                                console.log("Values - First:", firstName, "Last:", lastName, "Creds:", credentials);
+                            }
+                            
+                            // Generate title: Firstname Lastname, credentials (capitalize first letter only)
+                            if (firstName && lastName) {
+                                var titleFirstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+                                var titleLastName = lastName.charAt(0).toUpperCase() + lastName.slice(1).toLowerCase();
+                                var title = titleFirstName + " " + titleLastName;
+                                if (credentials) {
+                                    title += ", " + credentials;
+                                }
+                                console.log("Generated Title:", title);
+                                $("#title").val(title);
+                                $("#title-prompt-text").hide();
+                            } else {
+                                console.log("Not enough data to generate title");
+                            }
+                        }
+                        
+                        // Watch for changes on ACF fields in basic_info group
+                        $(document).on("input change blur keyup", "input[name*=\'basic_info\'][name*=\'first_name\'], input[name*=\'basic_info\'][name*=\'last_name\'], input[name*=\'basic_info\'][name*=\'credentials\']", function() {
+                            console.log("Field changed:", $(this).attr("name"));
+                            updateMemberTitle();
+                        });
+                        
+                        // Also trigger on initial load
+                        setTimeout(updateMemberTitle, 500);
+                    });
+                </script>';
+            }
+        });
+        
+        // Rename Featured Image to Profile Image
+        add_filter('post_type_labels_member', function($labels) {
+            $labels->featured_image = 'Profile Image';
+            $labels->set_featured_image = 'Set profile image';
+            $labels->remove_featured_image = 'Remove profile image';
+            $labels->use_featured_image = 'Use as profile image';
+            return $labels;
         });
 
         add_filter('use_block_editor_for_post_type', function($use_block_editor, $post_type) {
-            if ($post_type === 'scn_profile') {
+            if ($post_type === 'member') {
                 return false;
             }
             return $use_block_editor;
         }, 10, 2);
 
         // Single consolidated save_post hook for profiles
-        add_action('save_post_scn_profile', [$this, 'handleProfileSave'], 20, 3);
+        add_action('save_post_member', [$this, 'handleProfileSave'], 20, 3);
 
         $this->forceSingleColumnLayoutForProfiles();
         $this->preventOverflowAndEnforceSingleColumnForProfiles();
@@ -673,23 +823,74 @@ JS);
             return;
         }
 
-        // Auto-generate title from name or other fields
-        $name = '';
-        if (isset($_POST['scn_profile_first_name']) && isset($_POST['scn_profile_last_name'])) {
-            $first_name = trim((string) $_POST['scn_profile_first_name']);
-            $last_name = trim((string) $_POST['scn_profile_last_name']);
-            $name = trim($first_name . ' ' . $last_name);
+        // Auto-generate title and slug from name + credentials
+        $first_name = '';
+        $last_name = '';
+        $credentials = '';
+        
+        // Try to get from ACF fields (works after ACF has saved)
+        if (function_exists('get_field')) {
+            // Try basic_info group structure first
+            $basic_info = get_field('basic_info', $post_id);
+            if ($basic_info && is_array($basic_info)) {
+                $first_name = trim((string) ($basic_info['first_name'] ?? ''));
+                $last_name = trim((string) ($basic_info['last_name'] ?? ''));
+                $credentials = trim((string) ($basic_info['credentials'] ?? ''));
+            }
+            
+            // Try direct fields if basic_info didn't work
+            if (empty($first_name) && empty($last_name)) {
+                $first_name = trim((string) get_field('scn_first_name', $post_id));
+                $last_name = trim((string) get_field('scn_last_name', $post_id));
+                $credentials = trim((string) get_field('scn_credentials', $post_id));
+            }
         }
         
-        error_log('SCN Profile Save: Name found: "' . $name . '", Current title: "' . $post->post_title . '"');
+        // Fallback to $_POST if ACF fields not yet saved
+        if (empty($first_name) && isset($_POST['acf'])) {
+            // ACF stores data in $_POST['acf'] array with field keys
+            foreach ($_POST['acf'] as $key => $value) {
+                if (is_array($value)) {
+                    // Check if it's the basic_info group
+                    if (isset($value['first_name'])) {
+                        $first_name = trim((string) $value['first_name']);
+                        $last_name = trim((string) ($value['last_name'] ?? ''));
+                        $credentials = trim((string) ($value['credentials'] ?? ''));
+                        break;
+                    }
+                }
+            }
+        }
         
-        if ($name && ('' === $post->post_title || $post->post_title === 'Auto Draft')) {
-            error_log('SCN Profile Save: Updating title to: "' . $name . '"');
+        error_log('SCN Profile Save: First: "' . $first_name . '", Last: "' . $last_name . '", Credentials: "' . $credentials . '"');
+        
+        // Build the formatted title and slug
+        if ($first_name && $last_name) {
+            // Title format: Firstname Lastname, credentials (capitalize first letter only)
+            $title = ucfirst(strtolower($first_name)) . ' ' . ucfirst(strtolower($last_name));
+            if ($credentials) {
+                $title .= ', ' . $credentials;
+            }
+            
+            // Slug format: firstname-lastname-credentials
+            $slug_parts = [strtolower($first_name), strtolower($last_name)];
+            if ($credentials) {
+                $slug_parts[] = strtolower($credentials);
+            }
+            $slug = sanitize_title(implode('-', $slug_parts));
+            
+            error_log('SCN Profile Save: Generated title: "' . $title . '", slug: "' . $slug . '"');
+            
+            // Always update if we have name data
+            remove_action('save_post_member', [$this, 'handleProfileSave'], 20);
             wp_update_post([
                 'ID' => $post_id,
-                'post_title' => wp_strip_all_tags($name),
-                'post_name' => sanitize_title($name),
+                'post_title' => wp_strip_all_tags($title),
+                'post_name' => $slug,
             ]);
+            add_action('save_post_member', [$this, 'handleProfileSave'], 20, 3);
+            
+            error_log('SCN Profile Save: Title and slug updated');
         }
 
         $processing = false;
@@ -1078,6 +1279,20 @@ CSS;
             }
         }
     }
+
+    
+    public function forceClassicEditorForMembers($use_block_editor, $post_type)
+    {
+        // Define member post types that should use classic editor
+        $member_post_types = ['scn_profile', 'scn_course', 'scn_event'];
+        
+        if (in_array($post_type, $member_post_types)) {
+            return false; // Use classic editor
+        }
+        
+        return $use_block_editor;
+    }
+
 }
 
 SCN_Membership_Bootstrap::getInstance();

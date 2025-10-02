@@ -22,11 +22,28 @@ class AdminService {
         // Disable Gutenberg sidebar panels for our CPTs
         add_action('enqueue_block_editor_assets', [$this, 'disableGutenbergSidebarPanels']);
         
-        // Debug logger for metabox registrations (dev only)
-        add_action('current_screen', [$this, 'debugMetaboxRegistrations']);
+        // Debug logger for metabox registrations (dev only) - but not for ACF screens
+        add_action('current_screen', function($screen) {
+            // Skip ALL ACF admin screens
+            $acf_post_types = ['acf-field-group', 'acf-field', 'acf-post-type', 'acf-taxonomy', 'acf-ui-options-page'];
+            if ($screen && in_array($screen->post_type, $acf_post_types, true)) {
+                return;
+            }
+            $this->debugMetaboxRegistrations($screen);
+        });
     }
 
     public function addAdminMenus() {
+        // Don't interfere with ANY ACF admin pages
+        $acf_post_types = ['acf-field-group', 'acf-post-type', 'acf-taxonomy', 'acf-ui-options-page'];
+        
+        if (isset($_GET['post_type']) && in_array($_GET['post_type'], $acf_post_types)) {
+            return;
+        }
+        if (isset($_GET['post']) && in_array(get_post_type($_GET['post']), $acf_post_types)) {
+            return;
+        }
+        
         // Force register post types and taxonomies first
         $this->ensurePostTypesRegistered();
         
@@ -52,11 +69,22 @@ class AdminService {
         // Add post type submenus
         add_submenu_page(
             'scn-membership',
-            __('Profiles', 'scn-membership'),
-            __('Profiles', 'scn-membership'),
+            __('Members', 'scn-membership'),
+            __('Members', 'scn-membership'),
             'edit_posts',
             'edit.php?post_type=scn_profile'
         );
+        
+        // Add any ACF-created member post types
+        $this->addACFMemberPostTypes();
+        
+        // Add specific known member post types (add more as needed)
+        $this->addSpecificMemberPostTypes();
+        
+        // Force classic editor for member post types
+        add_filter('use_block_editor_for_post_type', [$this, 'disableBlockEditorForMemberTypes'], 10, 2);
+        add_filter('use_block_editor_for_post', [$this, 'disableBlockEditorForMemberPosts'], 10, 2);
+        add_action('admin_enqueue_scripts', [$this, 'ensureClassicEditorForMembers']);
 
         add_submenu_page(
             'scn-membership',
@@ -139,6 +167,188 @@ class AdminService {
         );
     }
 
+    private function addACFMemberPostTypes() {
+        // Look for any post types that might be member-related
+        $post_types = get_post_types([], 'objects');
+        
+        foreach ($post_types as $post_type_name => $post_type_obj) {
+            // Skip our existing post types
+            if (in_array($post_type_name, ['scn_profile', 'scn_course', 'scn_event'])) {
+                continue;
+            }
+            
+            // Check if this looks like a member post type
+            $is_member_type = $this->isMemberPostType($post_type_name, $post_type_obj);
+            
+            if ($is_member_type) {
+                // Add it as a submenu under SCN Membership
+                add_submenu_page(
+                    'scn-membership',
+                    $post_type_obj->label,
+                    $post_type_obj->labels->menu_name ?? $post_type_obj->label,
+                    $post_type_obj->cap->edit_posts,
+                    'edit.php?post_type=' . $post_type_name
+                );
+                
+                // Hide it from the main menu if it's currently showing
+                if ($post_type_obj->show_in_menu) {
+                    $post_type_obj->show_in_menu = false;
+                }
+            }
+        }
+    }
+    
+    private function isMemberPostType($post_type_name, $post_type_obj) {
+        // Check various indicators that this might be a member post type
+        
+        // Check post type name
+        $name_lower = strtolower($post_type_name);
+        if (strpos($name_lower, 'member') !== false) {
+            return true;
+        }
+        
+        // Check labels
+        $label_lower = strtolower($post_type_obj->label);
+        $singular_lower = strtolower($post_type_obj->labels->singular_name);
+        
+        if (strpos($label_lower, 'member') !== false || 
+            strpos($singular_lower, 'member') !== false) {
+            return true;
+        }
+        
+        // Check if it's an ACF post type that might be member-related
+        if (function_exists('acf_get_post_type') && acf_get_post_type($post_type_name)) {
+            // If it's created by ACF and has member-like naming, include it
+            if (strpos($name_lower, 'user') !== false || 
+                strpos($name_lower, 'profile') !== false ||
+                strpos($name_lower, 'person') !== false) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private function addSpecificMemberPostTypes() {
+        // Add specific member post types that you know exist
+        // Add the post type names here as you discover them
+        
+        $known_member_post_types = [
+            // 'member',           // Add your ACF-created member post type name here
+            // 'scn_member',       // Or any other member-related post types
+            // 'acf_member',       // etc.
+        ];
+        
+        foreach ($known_member_post_types as $post_type_name) {
+            if (post_type_exists($post_type_name)) {
+                $post_type_obj = get_post_type_object($post_type_name);
+                
+                // Add it as a submenu under SCN Membership
+                add_submenu_page(
+                    'scn-membership',
+                    $post_type_obj->label,
+                    $post_type_obj->labels->menu_name ?? $post_type_obj->label,
+                    $post_type_obj->cap->edit_posts,
+                    'edit.php?post_type=' . $post_type_name
+                );
+                
+                // Hide it from the main menu if it's currently showing
+                if ($post_type_obj->show_in_menu) {
+                    $post_type_obj->show_in_menu = false;
+                }
+            }
+        }
+    }
+    
+    public function disableBlockEditorForMemberTypes($use_block_editor, $post_type) {
+        // Define member post types that should use classic editor
+        $member_post_types = [
+            'scn_profile',
+            'member',
+            'scn_member',
+            'acf_member',
+            'members',
+        ];
+        
+        // Check if this is a member post type
+        if (in_array($post_type, $member_post_types)) {
+            return false; // Use classic editor
+        }
+        
+        // Also check by post type name pattern
+        if (strpos($post_type, 'member') !== false) {
+            return false; // Use classic editor
+        }
+        
+        // Check if it's an ACF-created member-related post type
+        if (function_exists('acf_get_post_type') && acf_get_post_type($post_type)) {
+            $post_type_obj = get_post_type_object($post_type);
+            if ($post_type_obj) {
+                $name_lower = strtolower($post_type);
+                $label_lower = strtolower($post_type_obj->label);
+                $singular_lower = strtolower($post_type_obj->labels->singular_name);
+                
+                // If it looks like a member post type, use classic editor
+                if (strpos($name_lower, 'member') !== false || 
+                    strpos($label_lower, 'member') !== false || 
+                    strpos($singular_lower, 'member') !== false ||
+                    strpos($name_lower, 'user') !== false ||
+                    strpos($name_lower, 'profile') !== false ||
+                    strpos($name_lower, 'person') !== false) {
+                    return false; // Use classic editor
+                }
+            }
+        }
+        
+        return $use_block_editor; // Use default behavior for other post types
+    }
+    
+    public function disableBlockEditorForMemberPosts($use_block_editor, $post) {
+        if (!$post) {
+            return $use_block_editor;
+        }
+        
+        $post_type = get_post_type($post);
+        
+        // Use the same logic as the post type filter
+        return !$this->isMemberPostType($post_type, get_post_type_object($post_type));
+    }
+    
+    public function ensureClassicEditorForMembers($hook) {
+        global $post_type, $post;
+        
+        // Only run on post editing screens
+        if (!in_array($hook, ['post.php', 'post-new.php'])) {
+            return;
+        }
+        
+        // Check if we're editing a member post type
+        $current_post_type = $post_type;
+        if (!$current_post_type && $post) {
+            $current_post_type = get_post_type($post);
+        }
+        
+        if ($current_post_type && $this->isMemberPostType($current_post_type, get_post_type_object($current_post_type))) {
+            // Force classic editor by removing block editor scripts
+            wp_dequeue_script('wp-block-editor');
+            wp_dequeue_script('wp-editor');
+            wp_dequeue_script('wp-edit-post');
+            
+            // Ensure classic editor is loaded
+            add_filter('user_can_richedit', '__return_true');
+            
+            // Add inline script to ensure classic editor
+            wp_add_inline_script('jquery', "
+                jQuery(document).ready(function($) {
+                    // Force classic editor mode
+                    if (typeof wp !== 'undefined' && wp.data) {
+                        wp.data.dispatch('core/edit-post').switchEditorMode('text');
+                    }
+                });
+            ");
+        }
+    }
+
     private function ensurePostTypesRegistered() {
         // Ensure capabilities are added first
         $this->addCapabilities();
@@ -147,16 +357,16 @@ class AdminService {
         if (!post_type_exists('scn_profile')) {
             register_post_type('scn_profile', [
                 'labels' => [
-                    'name' => __('SCN Profiles', 'scn-membership'),
-                    'singular_name' => __('Profile', 'scn-membership'),
-                    'add_new' => __('Add New Profile', 'scn-membership'),
-                    'add_new_item' => __('Add New Profile', 'scn-membership'),
-                    'edit_item' => __('Edit Profile', 'scn-membership'),
-                    'new_item' => __('New Profile', 'scn-membership'),
-                    'view_item' => __('View Profile', 'scn-membership'),
-                    'search_items' => __('Search Profiles', 'scn-membership'),
-                    'not_found' => __('No profiles found', 'scn-membership'),
-                    'not_found_in_trash' => __('No profiles found in trash', 'scn-membership'),
+                    'name' => __('SCN Members', 'scn-membership'),
+                    'singular_name' => __('Member', 'scn-membership'),
+                    'add_new' => __('Add New Member', 'scn-membership'),
+                    'add_new_item' => __('Add New Member', 'scn-membership'),
+                    'edit_item' => __('Edit Member', 'scn-membership'),
+                    'new_item' => __('New Member', 'scn-membership'),
+                    'view_item' => __('View Member', 'scn-membership'),
+                    'search_items' => __('Search Members', 'scn-membership'),
+                    'not_found' => __('No members found', 'scn-membership'),
+                    'not_found_in_trash' => __('No members found in trash', 'scn-membership'),
                 ],
                 'public' => true,
                 'has_archive' => true,
@@ -164,10 +374,10 @@ class AdminService {
                 'supports' => ['title', 'editor', 'thumbnail'],
                 'capability_type' => 'scn_profile',
                 'map_meta_cap' => true,
-                'show_in_rest' => true,
+                'show_in_rest' => false, // Disable REST API to force classic editor
                 'rest_base' => 'profiles',
                 'rest_controller_class' => 'WP_REST_Posts_Controller',
-                'show_in_menu' => false,
+                'show_in_menu' => false, // Hide from main menu, show only under SCN Membership
             ]);
         }
 
@@ -194,7 +404,7 @@ class AdminService {
                 'show_in_rest' => true,
                 'rest_base' => 'courses',
                 'rest_controller_class' => 'WP_REST_Posts_Controller',
-                'show_in_menu' => false,
+                'show_in_menu' => false, // Hide from main menu, show only under SCN Membership
             ]);
         }
 
@@ -214,7 +424,7 @@ class AdminService {
                 ],
                 'public' => false,
                 'show_ui' => true,
-                'show_in_menu' => false,
+                'show_in_menu' => false, // Hide from main menu, show only under SCN Membership
                 'supports' => ['title', 'editor'],
                 'capability_type' => 'scn_event',
                 'map_meta_cap' => true,
@@ -381,6 +591,12 @@ class AdminService {
             return;
         }
 
+        // Don't interfere with ANY ACF post types
+        $acf_post_types = ['acf-field-group', 'acf-field', 'acf-post-type', 'acf-taxonomy', 'acf-ui-options-page'];
+        if (in_array($post->post_type, $acf_post_types, true)) {
+            return;
+        }
+
         $cpt_types = ['scn_profile', 'scn_event', 'scn_course'];
         
         if (!in_array($post->post_type, $cpt_types)) {
@@ -424,6 +640,12 @@ class AdminService {
      */
     public function disableGutenbergSidebarPanels() {
         $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        
+        // Don't interfere with ANY ACF screens
+        $acf_post_types = ['acf-field-group', 'acf-field', 'acf-post-type', 'acf-taxonomy', 'acf-ui-options-page'];
+        if ($screen && in_array($screen->post_type, $acf_post_types, true)) {
+            return;
+        }
         
         if (!$screen || !in_array($screen->post_type, ['scn_profile', 'scn_event', 'scn_course'], true)) {
             return;
