@@ -14,20 +14,24 @@ class Plugin {
     }
 
     private function initializeModules() {
+        error_log("SCN Membership: Initializing modules");
+        
         $this->modules = [
             'auth' => new \SCN\Membership\Modules\Auth\AuthModule(),
             'profiles' => new \SCN\Membership\Modules\Profiles\ProfilesModule(),
             'courses' => new \SCN\Membership\Modules\Courses\CoursesModule(),
-            'events' => new \SCN\Membership\Modules\Events\EventsModule(),
             'directory' => new \SCN\Membership\Modules\Directory\DirectoryModule(),
             'resources' => new \SCN\Membership\Modules\Resources\ResourcesModule(),
             'widgets' => new \SCN\Membership\Modules\Widgets\WidgetsModule(),
         ];
+        
+        error_log("SCN Membership: Modules initialized, count: " . count($this->modules));
     }
 
     public function registerModules() {
-        foreach ($this->modules as $module) {
+        foreach ($this->modules as $name => $module) {
             if (method_exists($module, 'register')) {
+                error_log("SCN Membership: Registering module: $name");
                 $module->register();
             }
         }

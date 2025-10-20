@@ -46,7 +46,7 @@ get_header();
                             <span class="scn-status-value">
                                 <?php
                                 $profile_posts = get_posts([
-                                    'post_type' => 'scn_profile',
+                                    'post_type' => 'profile',
                                     'meta_query' => [
                                         [
                                             'key' => 'scn_user_id',
@@ -105,7 +105,7 @@ get_header();
                                 // Create profile
                                 $profile_id = wp_insert_post([
                                     'post_title' => 'Test Member',
-                                    'post_type' => 'scn_profile',
+                                    'post_type' => 'profile',
                                     'post_status' => 'publish',
                                     'post_author' => $user_id,
                                     'meta_input' => [
@@ -115,7 +115,7 @@ get_header();
                                         'scn_bio' => 'This is a test member profile for SCN Membership authentication testing.',
                                         'scn_location' => 'Test City, TC',
                                         'scn_credentials' => 'Test Member, SCN',
-                                        'scn_member_since' => current_time('mysql')
+                                        'member_since' => current_time('mysql')
                                     ]
                                 ]);
                                 

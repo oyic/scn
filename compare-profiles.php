@@ -24,7 +24,7 @@ require_once SCN_MEMBERSHIP_PATH . 'includes/profile-auth-functions.php';
 
 // Get both profiles
 $ezekiel_profile = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'meta_query' => [
         [
             'key' => 'scn_username',
@@ -37,7 +37,7 @@ $ezekiel_profile = get_posts([
 ]);
 
 $dd_profile = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'meta_query' => [
         [
             'key' => 'scn_username',
@@ -90,7 +90,7 @@ echo "<div class='info'>";
 echo "<h2>🔍 Meta Data Comparison</h2>";
 echo "</div>";
 
-$meta_keys = ['scn_username', 'scn_password', 'scn_user_id', 'scn_member_since', 'scn_first_name', 'scn_last_name'];
+$meta_keys = ['scn_username', 'scn_password', 'scn_user_id', 'member_since', 'scn_first_name', 'scn_last_name'];
 
 echo "<table>";
 echo "<tr><th>Meta Key</th><th>ezekiel</th><th>dd</th><th>Difference</th></tr>";
@@ -171,8 +171,8 @@ if (!empty($ezekiel)) {
         if (!session_id()) {
             session_start();
         }
-        unset($_SESSION['scn_profile_id']);
-        unset($_SESSION['scn_profile_authenticated']);
+        unset($_SESSION['profile_id']);
+        unset($_SESSION['profile_authenticated']);
     }
     
     // Set ezekiel session
@@ -198,8 +198,8 @@ if (!empty($dd)) {
         if (!session_id()) {
             session_start();
         }
-        unset($_SESSION['scn_profile_id']);
-        unset($_SESSION['scn_profile_authenticated']);
+        unset($_SESSION['profile_id']);
+        unset($_SESSION['profile_authenticated']);
     }
     
     // Set dd session

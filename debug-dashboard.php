@@ -139,7 +139,7 @@ if (file_exists($dashboard_template)) {
         if (function_exists('scn_set_profile_session')) {
             // Find the dd profile
             $dd_profile = get_posts([
-                'post_type' => 'scn_profile',
+                'post_type' => 'profile',
                 'meta_query' => [
                     [
                         'key' => 'scn_username',

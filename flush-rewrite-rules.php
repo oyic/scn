@@ -22,9 +22,9 @@ echo "- " . home_url('/test-auth/') . "\n";
 // Check if rewrite rules are working
 $rules = get_option('rewrite_rules');
 $auth_rules = [
-    '^member-login/?$' => 'index.php?scn_member_login=1',
-    '^member-register/?$' => 'index.php?scn_member_register=1',
-    '^member-dashboard/?$' => 'index.php?scn_member_dashboard=1',
+    '^member-login/?$' => 'index.php?member_login=1',
+    '^member-register/?$' => 'index.php?member_register=1',
+    '^member-dashboard/?$' => 'index.php?member_dashboard=1',
     '^test-auth/?$' => 'index.php?scn_test_auth=1'
 ];
 

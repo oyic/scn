@@ -32,9 +32,9 @@ echo "<h1>SCN Members Menu Test</h1>";
 
 // Test 1: Check post type registration
 echo "<h2>1. Post Type Registration</h2>";
-if (post_type_exists('scn_profile')) {
-    $post_type_obj = get_post_type_object('scn_profile');
-    echo "<p>✅ scn_profile post type is registered</p>";
+if (post_type_exists('profile')) {
+    $post_type_obj = get_post_type_object('profile');
+    echo "<p>✅ profile post type is registered</p>";
     echo "<ul>";
     echo "<li><strong>Label:</strong> {$post_type_obj->label}</li>";
     echo "<li><strong>Singular Name:</strong> {$post_type_obj->labels->singular_name}</li>";
@@ -42,7 +42,7 @@ if (post_type_exists('scn_profile')) {
     echo "<li><strong>Show in Menu:</strong> " . ($post_type_obj->show_in_menu ? '✅ Yes' : '❌ No') . "</li>";
     echo "</ul>";
 } else {
-    echo "<p>❌ scn_profile post type is not registered</p>";
+    echo "<p>❌ profile post type is not registered</p>";
 }
 
 // Test 2: Check admin menu structure
@@ -75,7 +75,7 @@ if ($scn_main_menu) {
             $slug = $submenu_item[2];
             echo "<li><strong>{$title}</strong> - {$slug}</li>";
             
-            if (strpos($slug, 'edit.php?post_type=scn_profile') !== false) {
+            if (strpos($slug, 'edit.php?post_type=profile') !== false) {
                 echo "<span style='color: green;'> ✅ This is the Members submenu!</span>";
             }
         }
@@ -91,8 +91,8 @@ if ($scn_main_menu) {
 echo "<h2>3. Direct Access Links</h2>";
 $admin_links = [
     'SCN Membership Main' => admin_url('admin.php?page=scn-membership'),
-    'Members List' => admin_url('edit.php?post_type=scn_profile'),
-    'Add New Member' => admin_url('post-new.php?post_type=scn_profile'),
+    'Members List' => admin_url('edit.php?post_type=profile'),
+    'Add New Member' => admin_url('post-new.php?post_type=profile'),
     'Member Field Groups' => admin_url('edit.php?post_type=acf-field-group'),
 ];
 
@@ -109,7 +109,7 @@ if (function_exists('acf_get_field_groups')) {
     $member_field_group = null;
     
     foreach ($field_groups as $group) {
-        if (strpos($group['key'], 'scn_profile') !== false || strpos($group['title'], 'Member') !== false) {
+        if (strpos($group['key'], 'profile') !== false || strpos($group['title'], 'Member') !== false) {
             $member_field_group = $group;
             break;
         }
@@ -131,7 +131,7 @@ if (function_exists('acf_get_field_groups')) {
 // Test 5: Check existing members
 echo "<h2>5. Existing Members</h2>";
 $members = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'posts_per_page' => 5,
     'post_status' => 'any',
 ]);
@@ -144,7 +144,7 @@ if (!empty($members)) {
     }
     echo "</ul>";
 } else {
-    echo "<p>⚠️ No members found. <a href='" . admin_url('post-new.php?post_type=scn_profile') . "' target='_blank'>Create a test member</a></p>";
+    echo "<p>⚠️ No members found. <a href='" . admin_url('post-new.php?post_type=profile') . "' target='_blank'>Create a test member</a></p>";
 }
 
 echo "<div style='background: #e7f3ff; padding: 15px; border-radius: 4px; margin: 20px 0;'>";
@@ -152,7 +152,7 @@ echo "<h3>Expected Menu Structure:</h3>";
 echo "<ul>";
 echo "<li><strong>SCN Membership</strong> (main menu)</li>";
 echo "<li>├── Settings</li>";
-echo "<li>├── Members ← This should link to scn_profile post type</li>";
+echo "<li>├── Members ← This should link to profile post type</li>";
 echo "<li>├── Courses</li>";
 echo "<li>├── Events</li>";
 echo "<li>└── Other submenus...</li>";

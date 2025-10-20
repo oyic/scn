@@ -2,7 +2,6 @@
 
 namespace SCN\Membership\Infra;
 
-use SCN\Membership\Infra\Migrations\CreateEventsTables;
 
 class Database {
     private $migrations = [];
@@ -19,13 +18,11 @@ class Database {
     }
 
     private function registerMigrations() {
-        $this->migrations = [
-            'create_events_tables' => new CreateEventsTables(),
-        ];
+        $this->migrations = [];
     }
 
     public function checkMigrations() {
-        $current_version = get_option('scn_events_db_version', '0.0.0');
+        $current_version = get_option('membership_db_version', '0.0.0');
         
         foreach ($this->migrations as $migration) {
             if (version_compare($current_version, $migration->getVersion(), '<')) {

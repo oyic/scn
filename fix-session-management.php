@@ -36,7 +36,7 @@ if (!defined("ABSPATH")) {
 function scn_authenticate_profile($username, $password) {
     // Find profile by username
     $profiles = get_posts([
-        "post_type" => "scn_profile",
+        "post_type" => "profile",
         "meta_query" => [
             [
                 "key" => "scn_username",
@@ -197,7 +197,7 @@ function scn_logout_profile() {
  */
 function scn_get_profile($profile_id) {
     $profile = get_post($profile_id);
-    if (!$profile || $profile->post_type !== "scn_profile") {
+    if (!$profile || $profile->post_type !== "profile") {
         return null;
     }
     return $profile;
@@ -317,7 +317,7 @@ require_once SCN_MEMBERSHIP_PATH . 'includes/profile-auth-functions-improved.php
 
 // Test authentication
 $test_profile = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'meta_query' => [
         [
             'key' => 'scn_username',

@@ -21,7 +21,7 @@ echo "<h2>🔧 Adding Login Credentials to Profiles</h2>";
 echo "</div>";
 
 $profiles = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'posts_per_page' => -1,
     'post_status' => 'publish'
 ]);
@@ -77,7 +77,7 @@ if (!defined("ABSPATH")) {
 function scn_authenticate_profile($username, $password) {
     // Find profile by username
     $profiles = get_posts([
-        "post_type" => "scn_profile",
+        "post_type" => "profile",
         "meta_query" => [
             [
                 "key" => "scn_username",
@@ -110,8 +110,8 @@ function scn_set_profile_session($profile_id) {
     if (!session_id()) {
         session_start();
     }
-    $_SESSION["scn_profile_id"] = $profile_id;
-    $_SESSION["scn_profile_authenticated"] = true;
+    $_SESSION["profile_id"] = $profile_id;
+    $_SESSION["profile_authenticated"] = true;
 }
 
 /**
@@ -121,7 +121,7 @@ function scn_is_profile_authenticated() {
     if (!session_id()) {
         session_start();
     }
-    return isset($_SESSION["scn_profile_authenticated"]) && $_SESSION["scn_profile_authenticated"];
+    return isset($_SESSION["profile_authenticated"]) && $_SESSION["profile_authenticated"];
 }
 
 /**
@@ -136,7 +136,7 @@ function scn_get_current_profile() {
         session_start();
     }
     
-    $profile_id = $_SESSION["scn_profile_id"] ?? null;
+    $profile_id = $_SESSION["profile_id"] ?? null;
     if (!$profile_id) {
         return null;
     }
@@ -151,8 +151,8 @@ function scn_logout_profile() {
     if (!session_id()) {
         session_start();
     }
-    unset($_SESSION["scn_profile_id"]);
-    unset($_SESSION["scn_profile_authenticated"]);
+    unset($_SESSION["profile_id"]);
+    unset($_SESSION["profile_authenticated"]);
 }
 
 /**
@@ -160,7 +160,7 @@ function scn_logout_profile() {
  */
 function scn_get_profile($profile_id) {
     $profile = get_post($profile_id);
-    if (!$profile || $profile->post_type !== "scn_profile") {
+    if (!$profile || $profile->post_type !== "profile") {
         return null;
     }
     return $profile;
@@ -198,7 +198,7 @@ if (scn_is_profile_authenticated()) {
 }
 
 // Handle login form submission
-if ($_POST && isset($_POST["scn_profile_login"])) {
+if ($_POST && isset($_POST["profile_login"])) {
     $username = sanitize_text_field($_POST["username"]);
     $password = $_POST["password"];
     
@@ -242,7 +242,7 @@ get_header();
                     <input type="password" id="password" name="password" required>
                 </div>
 
-                <button type="submit" name="scn_profile_login" class="scn-login-btn">
+                <button type="submit" name="profile_login" class="scn-login-btn">
                     <?php _e("Sign In", "scn-membership"); ?>
                 </button>
             </form>
@@ -251,7 +251,7 @@ get_header();
                 <h3>Test Credentials:</h3>
                 <?php
                 $profiles = get_posts([
-                    "post_type" => "scn_profile",
+                    "post_type" => "profile",
                     "posts_per_page" => -1,
                     "post_status" => "publish"
                 ]);

@@ -44,10 +44,10 @@ try {
             echo "<p class='success'>✓ Rewrite rules exist (" . count($rules) . " rules)</p>";
             
             $auth_rules = [
-                '^member-login/?$' => 'index.php?scn_member_login=1',
-                '^member-dashboard/?$' => 'index.php?scn_member_dashboard=1',
-                '^member-register/?$' => 'index.php?scn_member_register=1',
-                '^member-logout/?$' => 'index.php?scn_member_logout=1',
+                '^member-login/?$' => 'index.php?member_login=1',
+                '^member-dashboard/?$' => 'index.php?member_dashboard=1',
+                '^member-register/?$' => 'index.php?member_register=1',
+                '^member-logout/?$' => 'index.php?member_logout=1',
                 '^test-auth/?$' => 'index.php?scn_test_auth=1'
             ];
             
@@ -98,7 +98,7 @@ try {
             SELECT p.ID, p.post_title 
             FROM wp_posts p 
             INNER JOIN wp_postmeta pm ON p.ID = pm.post_id 
-            WHERE p.post_type = 'scn_profile' 
+            WHERE p.post_type = 'profile' 
             AND pm.meta_key = 'scn_user_id' 
             AND pm.meta_value = ? 
             AND p.post_status = 'publish'
@@ -125,7 +125,7 @@ try {
             // Create profile for user
             $profile_data = [
                 'post_title' => 'Test Member Profile',
-                'post_type' => 'scn_profile',
+                'post_type' => 'profile',
                 'post_status' => 'publish',
                 'post_author' => $user_id,
             ];
@@ -134,7 +134,7 @@ try {
             
             if ($profile_id) {
                 update_post_meta($profile_id, 'scn_user_id', $user_id);
-                update_post_meta($profile_id, 'scn_member_since', current_time('mysql'));
+                update_post_meta($profile_id, 'member_since', current_time('mysql'));
                 echo "<p class='success'>✓ Profile created for user (ID: $profile_id)</p>";
             }
         } else {
@@ -177,7 +177,7 @@ try {
                 SELECT p.ID, p.post_title 
                 FROM wp_posts p 
                 INNER JOIN wp_postmeta pm ON p.ID = pm.post_id 
-                WHERE p.post_type = 'scn_profile' 
+                WHERE p.post_type = 'profile' 
                 AND pm.meta_key = 'scn_user_id' 
                 AND pm.meta_value = ? 
                 AND p.post_status = 'publish'

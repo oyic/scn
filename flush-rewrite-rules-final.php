@@ -44,10 +44,10 @@ try {
         echo "</div>";
         
         $auth_rules = [
-            '^member-login/?$' => 'index.php?scn_member_login=1',
-            '^member-dashboard/?$' => 'index.php?scn_member_dashboard=1',
-            '^member-register/?$' => 'index.php?scn_member_register=1',
-            '^member-logout/?$' => 'index.php?scn_member_logout=1',
+            '^member-login/?$' => 'index.php?member_login=1',
+            '^member-dashboard/?$' => 'index.php?member_dashboard=1',
+            '^member-register/?$' => 'index.php?member_register=1',
+            '^member-logout/?$' => 'index.php?member_logout=1',
             '^test-auth/?$' => 'index.php?scn_test_auth=1'
         ];
         
@@ -81,7 +81,7 @@ try {
     echo "<h3>🧪 Testing Query Variables</h3>";
     echo "</div>";
     
-    $query_vars = ['scn_member_login', 'scn_member_register', 'scn_member_dashboard', 'scn_member_logout', 'scn_test_auth'];
+    $query_vars = ['member_login', 'member_register', 'member_dashboard', 'member_logout', 'scn_test_auth'];
     
     foreach ($query_vars as $var) {
         $value = get_query_var($var);

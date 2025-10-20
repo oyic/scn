@@ -1,15 +1,18 @@
 <?php
 /**
- * Gutenberg Panel Killer - Removes all custom document panels for SCN CPTs
+ * Gutenberg Panel Killer - DISABLED
  * 
- * This MU-plugin aggressively removes any Gutenberg document panels that might
- * be automatically created by WordPress core for our custom post types.
+ * This MU-plugin is disabled to allow proper editor loading.
+ * We're now using proper editor switching instead of hiding panels.
  */
 
 // Prevent direct access
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// Plugin is disabled - no longer hiding panels
+return;
 
 /**
  * Remove Gutenberg document panels for SCN CPTs
@@ -18,7 +21,7 @@ add_action('enqueue_block_editor_assets', function () {
     $screen = function_exists('get_current_screen') ? get_current_screen() : null;
     
     // Only run on editor pages, not list pages
-    if (!$screen || !in_array($screen->post_type, ['scn_event', 'scn_course', 'scn_profile'], true) || $screen->base !== 'post') {
+    if (!$screen || !in_array($screen->post_type, ['event', 'course', 'profile'], true) || $screen->base !== 'post') {
         return;
     }
 
@@ -105,7 +108,7 @@ add_action('enqueue_block_editor_assets', function () {
  */
 add_action('rest_api_init', function() {
     // Remove REST API meta field registrations that might create panels
-    $post_types = ['scn_event', 'scn_course', 'scn_profile'];
+    $post_types = ['event', 'course', 'profile'];
     
     foreach ($post_types as $post_type) {
         // Get all registered meta fields for this post type
@@ -130,7 +133,7 @@ add_action('rest_api_init', function() {
  */
 add_action('current_screen', function($screen) {
     // Only run on editor pages, not list pages
-    if (!$screen || !in_array($screen->post_type, ['scn_event', 'scn_course', 'scn_profile'], true) || $screen->base !== 'post') {
+    if (!$screen || !in_array($screen->post_type, ['event', 'course', 'profile'], true) || $screen->base !== 'post') {
         return;
     }
     

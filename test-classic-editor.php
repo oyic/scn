@@ -45,7 +45,7 @@ foreach ($post_types as $post_type_name => $post_type_obj) {
     if (strpos($name_lower, 'member') !== false || 
         strpos($label_lower, 'member') !== false || 
         strpos($singular_lower, 'member') !== false ||
-        $post_type_name === 'scn_profile') {
+        $post_type_name === 'profile') {
         $is_member = true;
         $member_post_types[] = $post_type_name;
     }

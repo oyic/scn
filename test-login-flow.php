@@ -42,8 +42,8 @@ if (is_array($rules)) {
     echo "<p class='success'>✓ Rewrite rules exist (" . count($rules) . " rules)</p>";
     
     $auth_rules = [
-        '^member-login/?$' => 'index.php?scn_member_login=1',
-        '^member-dashboard/?$' => 'index.php?scn_member_dashboard=1'
+        '^member-login/?$' => 'index.php?member_login=1',
+        '^member-dashboard/?$' => 'index.php?member_dashboard=1'
     ];
     
     foreach ($auth_rules as $pattern => $replacement) {
@@ -107,7 +107,7 @@ if (isset($_POST['test_login'])) {
             
             // Check profile
             $profile_posts = get_posts([
-                'post_type' => 'scn_profile',
+                'post_type' => 'profile',
                 'meta_query' => [
                     [
                         'key' => 'scn_user_id',
@@ -124,7 +124,7 @@ if (isset($_POST['test_login'])) {
                 echo "<p><a href='" . home_url('/member-dashboard/') . "' target='_blank'>Go to Dashboard</a></p>";
             } else {
                 echo "<p class='warning'>⚠ User has no profile - should redirect to profile creation</p>";
-                echo "<p><a href='" . admin_url('post-new.php?post_type=scn_profile') . "' target='_blank'>Create Profile</a></p>";
+                echo "<p><a href='" . admin_url('post-new.php?post_type=profile') . "' target='_blank'>Create Profile</a></p>";
             }
         } else {
             echo "<p class='error'>✗ User is not logged in after wp_signon</p>";

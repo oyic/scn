@@ -27,10 +27,10 @@ if (is_array($rules)) {
     echo "</div>";
     
     $auth_rules = [
-        '^member-login/?$' => 'index.php?scn_member_login=1',
-        '^member-dashboard/?$' => 'index.php?scn_member_dashboard=1',
-        '^member-register/?$' => 'index.php?scn_member_register=1',
-        '^member-logout/?$' => 'index.php?scn_member_logout=1',
+        '^member-login/?$' => 'index.php?member_login=1',
+        '^member-dashboard/?$' => 'index.php?member_dashboard=1',
+        '^member-register/?$' => 'index.php?member_register=1',
+        '^member-logout/?$' => 'index.php?member_logout=1',
         '^test-auth/?$' => 'index.php?scn_test_auth=1'
     ];
     

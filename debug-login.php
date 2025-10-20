@@ -66,7 +66,7 @@ if (function_exists('username_exists')) {
             
             // Check if user has profile
             $profile_posts = get_posts([
-                'post_type' => 'scn_profile',
+                'post_type' => 'profile',
                 'meta_query' => [
                     [
                         'key' => 'scn_user_id',
@@ -101,9 +101,9 @@ if (is_array($rules)) {
     echo "<p class='success'>✓ Rewrite rules exist (" . count($rules) . " rules)</p>";
     
     $auth_rules = [
-        '^member-login/?$' => 'index.php?scn_member_login=1',
-        '^member-register/?$' => 'index.php?scn_member_register=1',
-        '^member-dashboard/?$' => 'index.php?scn_member_dashboard=1',
+        '^member-login/?$' => 'index.php?member_login=1',
+        '^member-register/?$' => 'index.php?member_register=1',
+        '^member-dashboard/?$' => 'index.php?member_dashboard=1',
         '^test-auth/?$' => 'index.php?scn_test_auth=1'
     ];
     

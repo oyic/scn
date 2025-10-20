@@ -14,7 +14,7 @@ if (is_user_logged_in()) {
 }
 
 // Handle registration form submission
-if ($_POST && isset($_POST['scn_member_register'])) {
+if ($_POST && isset($_POST['member_register'])) {
     $username = sanitize_text_field($_POST['username']);
     $email = sanitize_email($_POST['email']);
     $password = $_POST['password'];
@@ -73,7 +73,7 @@ if ($_POST && isset($_POST['scn_member_register'])) {
             // Create profile post
             $profile_data = [
                 'post_title' => $first_name . ' ' . $last_name,
-                'post_type' => 'scn_profile',
+                'post_type' => 'profile',
                 'post_status' => 'publish',
                 'post_author' => $user_id,
             ];
@@ -85,7 +85,7 @@ if ($_POST && isset($_POST['scn_member_register'])) {
                 update_post_meta($profile_id, 'scn_user_id', $user_id);
                 update_post_meta($profile_id, 'scn_first_name', $first_name);
                 update_post_meta($profile_id, 'scn_last_name', $last_name);
-                update_post_meta($profile_id, 'scn_member_since', current_time('mysql'));
+                update_post_meta($profile_id, 'member_since', current_time('mysql'));
                 
                 // Send email verification instead of auto-login
                 require_once plugin_dir_path(__FILE__) . '../../includes/email-confirmation.php';
@@ -218,7 +218,7 @@ get_header();
                     </label>
                 </div>
 
-                <button type="submit" name="scn_member_register" class="scn-register-btn">
+                <button type="submit" name="member_register" class="scn-register-btn">
                     <span class="scn-btn-text"><?php _e('Create Account', 'scn-membership'); ?></span>
                     <span class="scn-btn-loading" style="display: none;">
                         <span class="dashicons dashicons-update"></span>

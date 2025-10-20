@@ -106,7 +106,7 @@ echo "</div>";
 
 // Get a test profile
 $test_profile = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'meta_query' => [
         [
             'key' => 'scn_username',

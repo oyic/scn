@@ -17,7 +17,7 @@ body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding
 
 // Get the dd profile
 $dd_profile = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'meta_query' => [
         [
             'key' => 'scn_username',
@@ -50,15 +50,15 @@ echo "<h2>🔧 Adding missing meta data</h2>";
 echo "</div>";
 
 // Add member_since if missing
-$member_since = get_post_meta($profile->ID, 'scn_member_since', true);
+$member_since = get_post_meta($profile->ID, 'member_since', true);
 if (empty($member_since)) {
-    update_post_meta($profile->ID, 'scn_member_since', $profile->post_date);
+    update_post_meta($profile->ID, 'member_since', $profile->post_date);
     echo "<div class='success'>";
-    echo "<p>✅ Added scn_member_since: " . $profile->post_date . "</p>";
+    echo "<p>✅ Added member_since: " . $profile->post_date . "</p>";
     echo "</div>";
 } else {
     echo "<div class='info'>";
-    echo "<p>ℹ️ scn_member_since already exists: " . $member_since . "</p>";
+    echo "<p>ℹ️ member_since already exists: " . $member_since . "</p>";
     echo "</div>";
 }
 
@@ -102,7 +102,7 @@ $required_meta = [
     'scn_username' => 'Username',
     'scn_password' => 'Password',
     'scn_user_id' => 'WordPress User ID',
-    'scn_member_since' => 'Member Since'
+    'member_since' => 'Member Since'
 ];
 
 echo "<table style='width: 100%; border-collapse: collapse; margin: 10px 0;'>";

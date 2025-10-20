@@ -15,7 +15,7 @@ $location = get_post_meta($post_id, 'scn_location', true);
 $main_url = get_post_meta($post_id, 'scn_main_url', true);
 $social_links = get_post_meta($post_id, 'scn_social_links', true) ?: [];
 $bio = get_post_meta($post_id, 'scn_bio', true);
-$member_since = get_post_meta($post_id, 'scn_member_since', true);
+$member_since = get_post_meta($post_id, 'member_since', true);
 $topics = get_post_meta($post_id, 'scn_topics', true) ?: [];
 
 $frontend_templates = new \SCN\Membership\Modules\Profiles\FrontendTemplates();

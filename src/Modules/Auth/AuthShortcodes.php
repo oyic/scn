@@ -11,10 +11,10 @@ class AuthShortcodes
 
     public function register()
     {
-        add_shortcode('scn_member_login', [$this, 'renderLoginPage']);
-        add_shortcode('scn_member_register', [$this, 'renderRegisterPage']);
-        add_shortcode('scn_member_dashboard', [$this, 'renderDashboardPage']);
-        add_shortcode('scn_member_profile', [$this, 'renderMemberProfilePage']);
+        add_shortcode('member_login', [$this, 'renderLoginPage']);
+        add_shortcode('member_register', [$this, 'renderRegisterPage']);
+        add_shortcode('member_dashboard', [$this, 'renderDashboardPage']);
+        add_shortcode('member_profile', [$this, 'renderMemberProfilePage']);
         add_shortcode('scn_test_auth', [$this, 'renderTestPage']);
         add_action('wp_enqueue_scripts', [$this, 'enqueueProfileScripts']);
     }
@@ -26,7 +26,10 @@ class AuthShortcodes
     {
         // Check if we're on a page with the profile shortcode and user is logged in
         global $post;
-        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'scn_member_profile') && is_user_logged_in()) {
+        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'member_profile') && is_user_logged_in()) {
+            // Enqueue Dashicons for frontend
+            wp_enqueue_style('dashicons');
+            
             // Enqueue WordPress media scripts for image upload/cropping
             wp_enqueue_media();
             wp_enqueue_script('jquery');
@@ -233,11 +236,11 @@ class AuthShortcodes
             exit;
         }
 
-        // Redirect logged-in users to their profile
+        // Redirect logged-in users to their member profile
         if (is_user_logged_in()) {
             $current_user_id = get_current_user_id();
-            $profile_posts = get_posts([
-                'post_type' => 'scn_profile',
+            $member_posts = get_posts([
+                'post_type' => 'member',
                 'meta_query' => [
                     [
                         'key' => 'scn_user_id',
@@ -249,8 +252,9 @@ class AuthShortcodes
                 'post_status' => 'publish'
             ]);
             
-            if (!empty($profile_posts)) {
-                wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
+            if (!empty($member_posts)) {
+                // Redirect to member CPT URL format: /member/slug-name
+                wp_redirect(get_permalink($member_posts[0]->ID));
             } else {
                 wp_redirect(home_url('/member-dashboard/'));
             }
@@ -258,7 +262,7 @@ class AuthShortcodes
         }
 
         // Handle login form submission
-        if ($_POST && isset($_POST['scn_member_login'])) {
+        if ($_POST && isset($_POST['member_login'])) {
             $username = sanitize_text_field($_POST['username']);
             $password = $_POST['password'];
             $remember = isset($_POST['rememberme']) ? true : false;
@@ -272,9 +276,9 @@ class AuthShortcodes
             $user = wp_signon($creds, false);
             
             if (!is_wp_error($user)) {
-                // Check if user has a profile
-                $profile_posts = get_posts([
-                    'post_type' => 'scn_profile',
+                // Check if user has a member profile
+                $member_posts = get_posts([
+                    'post_type' => 'member',
                     'meta_query' => [
                         [
                             'key' => 'scn_user_id',
@@ -286,12 +290,12 @@ class AuthShortcodes
                     'post_status' => 'publish'
                 ]);
                 
-                if (!empty($profile_posts)) {
-                    // User has profile, redirect to frontend profile page
-                    wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
+                if (!empty($member_posts)) {
+                    // User has member profile, redirect to member CPT URL format: /member/slug-name
+                    wp_redirect(get_permalink($member_posts[0]->ID));
                 } else {
-                    // User doesn't have profile, redirect to profile creation
-                    wp_redirect(admin_url('post-new.php?post_type=scn_profile'));
+                    // User doesn't have profile, redirect to member creation
+                    wp_redirect(admin_url('post-new.php?post_type=member'));
                 }
                 exit;
             } else {
@@ -315,7 +319,7 @@ class AuthShortcodes
         if (is_user_logged_in()) {
             $current_user_id = get_current_user_id();
             $profile_posts = get_posts([
-                'post_type' => 'scn_profile',
+                'post_type' => 'member',
                 'meta_query' => [
                     [
                         'key' => 'scn_user_id',

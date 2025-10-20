@@ -29,16 +29,16 @@ class CoursesModule {
         $role = get_role('administrator');
         if ($role) {
             $capabilities = [
-                'edit_scn_courses',
-                'edit_others_scn_courses',
-                'publish_scn_courses',
-                'read_private_scn_courses',
-                'delete_scn_courses',
-                'delete_private_scn_courses',
-                'delete_published_scn_courses',
-                'delete_others_scn_courses',
-                'edit_private_scn_courses',
-                'edit_published_scn_courses',
+                'edit_courses',
+                'edit_others_courses',
+                'publish_courses',
+                'read_private_courses',
+                'delete_courses',
+                'delete_private_courses',
+                'delete_published_courses',
+                'delete_others_courses',
+                'edit_private_courses',
+                'edit_published_courses',
             ];
 
             foreach ($capabilities as $cap) {
@@ -49,14 +49,14 @@ class CoursesModule {
         $editor_role = get_role('editor');
         if ($editor_role) {
             $editor_capabilities = [
-                'edit_scn_courses',
-                'edit_others_scn_courses',
-                'publish_scn_courses',
-                'read_private_scn_courses',
-                'delete_scn_courses',
-                'delete_others_scn_courses',
-                'delete_published_scn_courses',
-                'edit_published_scn_courses',
+                'edit_courses',
+                'edit_others_courses',
+                'publish_courses',
+                'read_private_courses',
+                'delete_courses',
+                'delete_others_courses',
+                'delete_published_courses',
+                'edit_published_courses',
             ];
 
             foreach ($editor_capabilities as $cap) {
@@ -67,10 +67,10 @@ class CoursesModule {
         $author_role = get_role('author');
         if ($author_role) {
             $author_capabilities = [
-                'edit_scn_courses',
-                'publish_scn_courses',
-                'delete_scn_courses',
-                'edit_published_scn_courses',
+                'edit_courses',
+                'publish_courses',
+                'delete_courses',
+                'edit_published_courses',
             ];
 
             foreach ($author_capabilities as $cap) {
@@ -89,7 +89,7 @@ class CoursesModule {
     }
 
     public function getAllowedFormats($formats) {
-        return apply_filters('scn_course_allowed_formats', [
+        return apply_filters('course_allowed_formats', [
             'keynote' => __('Keynote', 'scn-membership'),
             'lecture' => __('Lecture', 'scn-membership'),
             'workshop' => __('Workshop', 'scn-membership'),
@@ -116,19 +116,19 @@ class CoursesModule {
             $link = 'https://' . $link;
         }
 
-        return apply_filters('scn_course_ondemand_link', $link);
+        return apply_filters('course_ondemand_link', $link);
     }
 
     public function getPlaceholderImageId() {
-        $placeholder_id = get_option('scn_course_placeholder_image_id', 0);
-        return apply_filters('scn_course_placeholder_image_id', $placeholder_id);
+        $placeholder_id = get_option('course_placeholder_image_id', 0);
+        return apply_filters('course_placeholder_image_id', $placeholder_id);
     }
 
     public function onCourseCreated($post_id) {
-        do_action('scn_course_created', $post_id);
+        do_action('course_created', $post_id);
     }
 
     public function onCourseUpdated($post_id) {
-        do_action('scn_course_updated', $post_id);
+        do_action('course_updated', $post_id);
     }
 }

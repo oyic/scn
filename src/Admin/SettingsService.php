@@ -3,9 +3,9 @@
 namespace SCN\Membership\Admin;
 
 class SettingsService {
-    private $settings_group = 'scn_membership_settings';
-    private $settings_section = 'scn_membership_section';
-    private $option_name = 'scn_membership_options';
+    private $settings_group = 'membership_settings';
+    private $settings_section = 'membership_section';
+    private $option_name = 'membership_options';
 
     public function register() {
         add_action('admin_init', [$this, 'initSettings']);
@@ -29,7 +29,6 @@ class SettingsService {
         $this->registerGeneralSettings();
         $this->registerImageSettings();
         $this->registerUrlSettings();
-        $this->registerEventSettings();
         $this->registerWidgetSettings();
         $this->registerAdvancedSettings();
     }
@@ -232,53 +231,6 @@ class SettingsService {
         );
     }
 
-    private function registerEventSettings() {
-        add_settings_section(
-            'scn_event_section',
-            __('Event Settings', 'scn-membership'),
-            [$this, 'eventSectionCallback'],
-            'scn-membership-settings'
-        );
-
-        add_settings_field(
-            'auto_approve_sessions',
-            __('Auto-approve Sessions', 'scn-membership'),
-            [$this, 'checkboxFieldCallback'],
-            'scn-membership-settings',
-            'scn_event_section',
-            [
-                'field' => 'auto_approve_sessions',
-                'description' => __('Automatically approve sessions for current and future events.', 'scn-membership')
-            ]
-        );
-
-        add_settings_field(
-            'session_approval_email',
-            __('Session Approval Email', 'scn-membership'),
-            [$this, 'emailFieldCallback'],
-            'scn-membership-settings',
-            'scn_event_section',
-            [
-                'field' => 'session_approval_email',
-                'description' => __('Email address to receive session approval notifications.', 'scn-membership')
-            ]
-        );
-
-        add_settings_field(
-            'widget_cache_duration',
-            __('Widget Cache Duration (minutes)', 'scn-membership'),
-            [$this, 'numberFieldCallback'],
-            'scn-membership-settings',
-            'scn_event_section',
-            [
-                'field' => 'widget_cache_duration',
-                'description' => __('How long to cache widget data before refreshing.', 'scn-membership'),
-                'min' => 5,
-                'max' => 1440,
-                'step' => 5
-            ]
-        );
-    }
 
     private function registerWidgetSettings() {
         add_settings_section(
@@ -796,7 +748,6 @@ class SettingsService {
         }
 
         // Clear various caches
-        delete_transient('scn_events_widget_upcoming_sessions');
         wp_cache_flush();
         
         // Clear any other plugin-specific caches

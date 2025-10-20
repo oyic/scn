@@ -27,7 +27,7 @@ if (is_user_logged_in()) {
     
     // Check if user has profile
     $profile_posts = get_posts([
-        'post_type' => 'scn_profile',
+        'post_type' => 'profile',
         'meta_query' => [
             [
                 'key' => 'scn_user_id',
@@ -68,11 +68,11 @@ foreach ($test_urls as $url => $name) {
     // Test what template would be used
     $query_vars = [];
     if ($url === '/member-login/') {
-        $query_vars['scn_member_login'] = '1';
+        $query_vars['member_login'] = '1';
     } elseif ($url === '/member-register/') {
-        $query_vars['scn_member_register'] = '1';
+        $query_vars['member_register'] = '1';
     } elseif ($url === '/member-dashboard/') {
-        $query_vars['scn_member_dashboard'] = '1';
+        $query_vars['member_dashboard'] = '1';
     } elseif ($url === '/test-auth/') {
         $query_vars['scn_test_auth'] = '1';
     }
@@ -89,9 +89,9 @@ echo "<h2>Template Loading Test</h2>";
 
 // Simulate the template loading logic
 $templates = [
-    'scn_member_login' => 'templates/auth/no-js-login.php',
-    'scn_member_register' => 'templates/auth/member-register.php',
-    'scn_member_dashboard' => 'templates/profiles/dashboard.php',
+    'member_login' => 'templates/auth/no-js-login.php',
+    'member_register' => 'templates/auth/member-register.php',
+    'member_dashboard' => 'templates/profiles/dashboard.php',
     'scn_test_auth' => 'templates/auth/test-auth.php'
 ];
 
@@ -137,7 +137,7 @@ if (isset($_POST['simulate_login'])) {
             
             // Check profile
             $profile_posts = get_posts([
-                'post_type' => 'scn_profile',
+                'post_type' => 'profile',
                 'meta_query' => [
                     [
                         'key' => 'scn_user_id',
@@ -154,7 +154,7 @@ if (isset($_POST['simulate_login'])) {
                 echo "<p>Dashboard URL: <a href='" . home_url('/member-dashboard/') . "' target='_blank'>" . home_url('/member-dashboard/') . "</a></p>";
             } else {
                 echo "<p class='warning'>⚠ User has no profile - should redirect to profile creation</p>";
-                echo "<p>Profile creation URL: <a href='" . admin_url('post-new.php?post_type=scn_profile') . "' target='_blank'>" . admin_url('post-new.php?post_type=scn_profile') . "</a></p>";
+                echo "<p>Profile creation URL: <a href='" . admin_url('post-new.php?post_type=profile') . "' target='_blank'>" . admin_url('post-new.php?post_type=profile') . "</a></p>";
             }
         } else {
             echo "<p class='error'>✗ User is not logged in after wp_signon</p>";
@@ -178,8 +178,8 @@ if (is_array($rules)) {
     echo "<p class='success'>✓ Rewrite rules exist (" . count($rules) . " rules)</p>";
     
     $auth_rules = [
-        '^member-login/?$' => 'index.php?scn_member_login=1',
-        '^member-dashboard/?$' => 'index.php?scn_member_dashboard=1'
+        '^member-login/?$' => 'index.php?member_login=1',
+        '^member-dashboard/?$' => 'index.php?member_dashboard=1'
     ];
     
     foreach ($auth_rules as $pattern => $replacement) {

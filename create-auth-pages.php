@@ -47,15 +47,15 @@ function create_auth_page($slug, $title, $content) {
 }
 
 // Create login page
-$login_content = '[scn_member_login]';
+$login_content = '[member_login]';
 $login_id = create_auth_page('member-login', 'Member Login', $login_content);
 
 // Create dashboard page
-$dashboard_content = '[scn_member_dashboard]';
+$dashboard_content = '[member_dashboard]';
 $dashboard_id = create_auth_page('member-dashboard', 'Member Dashboard', $dashboard_content);
 
 // Create register page
-$register_content = '[scn_member_register]';
+$register_content = '[member_register]';
 $register_id = create_auth_page('member-register', 'Member Registration', $register_content);
 
 // Create test page

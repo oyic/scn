@@ -20,11 +20,11 @@ class CoursesIntegrationTest extends TestCase {
 
     public function testCoursePostTypeRegistration() {
         // Test that the post type is registered
-        $this->assertTrue(post_type_exists('scn_course'));
+        $this->assertTrue(post_type_exists('course'));
         
-        $post_type_obj = get_post_type_object('scn_course');
+        $post_type_obj = get_post_type_object('course');
         $this->assertNotNull($post_type_obj);
-        $this->assertEquals('scn_course', $post_type_obj->name);
+        $this->assertEquals('course', $post_type_obj->name);
         $this->assertTrue($post_type_obj->public);
         $this->assertTrue($post_type_obj->has_archive);
         $this->assertTrue($post_type_obj->show_in_rest);
@@ -33,14 +33,14 @@ class CoursesIntegrationTest extends TestCase {
     public function testCourseMetaFieldsRegistration() {
         // Test that meta fields are registered
         $meta_fields = [
-            'scn_course_subtitle',
-            'scn_course_description',
-            'scn_course_ce_enabled',
-            'scn_course_ce_hours',
-            'scn_course_formats',
-            'scn_course_outcomes',
-            'scn_course_image_id',
-            'scn_course_ondemand'
+            'course_subtitle',
+            'course_description',
+            'course_ce_enabled',
+            'course_ce_hours',
+            'course_formats',
+            'course_outcomes',
+            'course_image_id',
+            'course_ondemand'
         ];
 
         foreach ($meta_fields as $field) {
@@ -52,20 +52,20 @@ class CoursesIntegrationTest extends TestCase {
         // Test that scn_topic taxonomy is extended to courses
         $taxonomy_obj = get_taxonomy('scn_topic');
         $this->assertNotNull($taxonomy_obj);
-        $this->assertContains('scn_course', $taxonomy_obj->object_type);
+        $this->assertContains('course', $taxonomy_obj->object_type);
     }
 
     public function testCapabilitiesAdded() {
         // Test that capabilities are added to roles
         $admin_role = get_role('administrator');
-        $this->assertTrue($admin_role->has_cap('edit_scn_courses'));
-        $this->assertTrue($admin_role->has_cap('publish_scn_courses'));
-        $this->assertTrue($admin_role->has_cap('delete_scn_courses'));
+        $this->assertTrue($admin_role->has_cap('edit_courses'));
+        $this->assertTrue($admin_role->has_cap('publish_courses'));
+        $this->assertTrue($admin_role->has_cap('delete_courses'));
 
         $author_role = get_role('author');
-        $this->assertTrue($author_role->has_cap('edit_scn_courses'));
-        $this->assertTrue($author_role->has_cap('publish_scn_courses'));
-        $this->assertTrue($author_role->has_cap('edit_others_scn_courses')); // Updated to match test mock
+        $this->assertTrue($author_role->has_cap('edit_courses'));
+        $this->assertTrue($author_role->has_cap('publish_courses'));
+        $this->assertTrue($author_role->has_cap('edit_others_courses')); // Updated to match test mock
     }
 
     public function testCourseImagePlaceholder() {
@@ -147,9 +147,9 @@ class CoursesIntegrationTest extends TestCase {
         add_filter('get_post_metadata', function($value, $object_id, $meta_key, $single) use ($course_id) {
             if ($object_id === $course_id) {
                 switch ($meta_key) {
-                    case 'scn_course_ce_enabled':
+                    case 'course_ce_enabled':
                         return '1';
-                    case 'scn_course_ce_hours':
+                    case 'course_ce_hours':
                         return '2.5';
                 }
             }
@@ -167,7 +167,7 @@ class CoursesIntegrationTest extends TestCase {
         
         // Mock meta data
         add_filter('get_post_metadata', function($value, $object_id, $meta_key, $single) use ($course_id) {
-            if ($object_id === $course_id && $meta_key === 'scn_course_formats') {
+            if ($object_id === $course_id && $meta_key === 'course_formats') {
                 return ['keynote', 'workshop'];
             }
             return $value;
@@ -184,7 +184,7 @@ class CoursesIntegrationTest extends TestCase {
         
         // Mock meta data
         add_filter('get_post_metadata', function($value, $object_id, $meta_key, $single) use ($course_id) {
-            if ($object_id === $course_id && $meta_key === 'scn_course_outcomes') {
+            if ($object_id === $course_id && $meta_key === 'course_outcomes') {
                 return ['Learn leadership skills', 'Improve communication'];
             }
             return $value;
@@ -202,7 +202,7 @@ class CoursesIntegrationTest extends TestCase {
         
         // Mock meta data
         add_filter('get_post_metadata', function($value, $object_id, $meta_key, $single) use ($course_id) {
-            if ($object_id === $course_id && $meta_key === 'scn_course_ondemand') {
+            if ($object_id === $course_id && $meta_key === 'course_ondemand') {
                 return [
                     'title' => 'Advanced Leadership',
                     'school' => 'University of Excellence',

@@ -58,7 +58,7 @@ if (!function_exists('get_role')) {
             private $capabilities = [];
             public function __construct($role) {
                 if ($role === 'administrator') {
-                    $this->capabilities = ['edit_scn_profiles', 'publish_scn_profiles', 'delete_scn_profiles'];
+                    $this->capabilities = ['edit_profiles', 'publish_profiles', 'delete_profiles'];
                 }
             }
             public function add_cap($cap) {
@@ -76,7 +76,7 @@ if (!function_exists('get_taxonomy')) {
         if ($taxonomy === 'scn_topic') {
             return new class {
                 public $name = 'scn_topic';
-                public $object_type = ['scn_profile'];
+                public $object_type = ['profile'];
             };
         }
         return null;
@@ -85,15 +85,15 @@ if (!function_exists('get_taxonomy')) {
 
 if (!function_exists('get_post_types')) {
     function get_post_types($args, $output) {
-        return ['scn_profile', 'post', 'page'];
+        return ['profile', 'post', 'page'];
     }
 }
 
 if (!function_exists('get_post_type_object')) {
     function get_post_type_object($post_type) {
-        if ($post_type === 'scn_profile') {
+        if ($post_type === 'profile') {
             return new class {
-                public $name = 'scn_profile';
+                public $name = 'profile';
                 public $public = true;
                 public $show_in_rest = true;
             };
@@ -161,7 +161,7 @@ if (!function_exists('get_post')) {
             public function __construct($id) {
                 $this->ID = $id;
                 $this->post_parent = 0;
-                $this->post_type = 'scn_profile';
+                $this->post_type = 'profile';
             }
         };
     }

@@ -156,7 +156,7 @@ if (!function_exists('get_taxonomy')) {
     function get_taxonomy($taxonomy) {
         return (object) [
             'name' => $taxonomy,
-            'object_type' => ['scn_course', 'scn_profile'],
+            'object_type' => ['course', 'profile'],
         ];
     }
 }
@@ -167,9 +167,9 @@ if (!function_exists('get_role')) {
             private $capabilities = [];
             public function __construct($role) {
                 if ($role === 'administrator') {
-                    $this->capabilities = ['edit_scn_courses', 'publish_scn_courses', 'delete_scn_courses', 'edit_others_scn_courses', 'edit_scn_profiles', 'publish_scn_profiles', 'delete_scn_profiles'];
+                    $this->capabilities = ['edit_courses', 'publish_courses', 'delete_courses', 'edit_others_courses', 'edit_profiles', 'publish_profiles', 'delete_profiles'];
                 } elseif ($role === 'author') {
-                    $this->capabilities = ['edit_scn_courses', 'publish_scn_courses', 'edit_others_scn_courses'];
+                    $this->capabilities = ['edit_courses', 'publish_courses', 'edit_others_courses'];
                 }
             }
             public function has_cap($cap) {
@@ -187,11 +187,11 @@ if (!function_exists('get_post_meta')) {
     function get_post_meta($post_id, $key, $single = false) {
         // Return test data for specific meta keys
         $test_data = [
-            'scn_course_ce_enabled' => '1',
-            'scn_course_ce_hours' => '2.5',
-            'scn_course_formats' => ['keynote', 'workshop'],
-            'scn_course_outcomes' => ['Learn leadership skills', 'Improve communication'],
-            'scn_course_ondemand' => [
+            'course_ce_enabled' => '1',
+            'course_ce_hours' => '2.5',
+            'course_formats' => ['keynote', 'workshop'],
+            'course_outcomes' => ['Learn leadership skills', 'Improve communication'],
+            'course_ondemand' => [
                 'title' => 'Advanced Leadership',
                 'school' => 'University of Excellence',
                 'link' => 'https://example.com/course'
@@ -270,7 +270,7 @@ if (!function_exists('wp_update_post')) {
 
 if (!function_exists('get_post_type')) {
     function get_post_type($post_id) {
-        return 'scn_course';
+        return 'course';
     }
 }
 
@@ -490,7 +490,7 @@ if (!function_exists('register_taxonomy')) {
 
 if (!function_exists('get_post_types')) {
     function get_post_types($args = [], $output = 'names', $operator = 'and') {
-        return ['scn_profile', 'scn_course'];
+        return ['profile', 'course'];
     }
 }
 
@@ -499,7 +499,7 @@ if (!function_exists('get_registered_meta')) {
         if ($object_type === 'post') {
             $profile_meta_fields = [
                 'scn_first_name', 'scn_last_name', 'scn_credentials', 'scn_location',
-                'scn_main_url', 'scn_social_links', 'scn_bio', 'scn_member_since',
+                'scn_main_url', 'scn_social_links', 'scn_bio', 'member_since',
                 'scn_topics', 'scn_gallery_images', 'scn_featured_video_url',
                 'scn_featured_video_thumbnail', 'scn_press_kit_files', 'scn_services', 'scn_badges'
             ];

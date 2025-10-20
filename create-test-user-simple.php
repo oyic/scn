@@ -20,7 +20,7 @@ if (username_exists('testmember')) {
         
         // Check if user has a profile
         $profile_posts = get_posts([
-            'post_type' => 'scn_profile',
+            'post_type' => 'profile',
             'meta_query' => [
                 [
                     'key' => 'scn_user_id',
@@ -40,7 +40,7 @@ if (username_exists('testmember')) {
             // Create profile
             $profile_id = wp_insert_post([
                 'post_title' => 'Test Member',
-                'post_type' => 'scn_profile',
+                'post_type' => 'profile',
                 'post_status' => 'publish',
                 'post_author' => $user->ID,
                 'meta_input' => [
@@ -50,7 +50,7 @@ if (username_exists('testmember')) {
                     'scn_bio' => 'This is a test member profile for SCN Membership authentication testing.',
                     'scn_location' => 'Test City, TC',
                     'scn_credentials' => 'Test Member, SCN',
-                    'scn_member_since' => current_time('mysql')
+                    'member_since' => current_time('mysql')
                 ]
             ]);
             
@@ -79,7 +79,7 @@ if (username_exists('testmember')) {
         // Create profile
         $profile_id = wp_insert_post([
             'post_title' => 'Test Member',
-            'post_type' => 'scn_profile',
+            'post_type' => 'profile',
             'post_status' => 'publish',
             'post_author' => $user_id,
             'meta_input' => [
@@ -89,7 +89,7 @@ if (username_exists('testmember')) {
                 'scn_bio' => 'This is a test member profile for SCN Membership authentication testing.',
                 'scn_location' => 'Test City, TC',
                 'scn_credentials' => 'Test Member, SCN',
-                'scn_member_since' => current_time('mysql')
+                'member_since' => current_time('mysql')
             ]
         ]);
         

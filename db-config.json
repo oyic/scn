@@ -1,0 +1,9 @@
+{
+  "database": {
+    "host": "localhost",
+    "database": "local",
+    "user": "root",
+    "password": "root",
+    "socket": "/Users/calberto/Library/Application Support/Local/run/KZeLJ4PQm/mysql/mysqld.sock"
+  }
+}

@@ -10,8 +10,8 @@ if (!defined('ABSPATH')) {
 // Redirect if already logged in
 if (is_user_logged_in()) {
     $current_user_id = get_current_user_id();
-    $profile_posts = get_posts([
-        'post_type' => 'scn_profile',
+    $member_posts = get_posts([
+        'post_type' => 'member',
         'meta_query' => [
             [
                 'key' => 'scn_user_id',
@@ -23,8 +23,9 @@ if (is_user_logged_in()) {
         'post_status' => 'publish'
     ]);
     
-    if (!empty($profile_posts)) {
-        wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
+    if (!empty($member_posts)) {
+        // Redirect to member CPT URL format: /member/slug-name
+        wp_redirect(get_permalink($member_posts[0]->ID));
     } else {
         wp_redirect(home_url('/member-dashboard/'));
     }
@@ -32,7 +33,7 @@ if (is_user_logged_in()) {
 }
 
 // Handle login form submission
-if ($_POST && isset($_POST['scn_member_login'])) {
+if ($_POST && isset($_POST['member_login'])) {
     $username = sanitize_text_field($_POST['username']);
     $password = $_POST['password'];
     $remember = isset($_POST['rememberme']) ? true : false;
@@ -46,9 +47,9 @@ if ($_POST && isset($_POST['scn_member_login'])) {
     $user = wp_signon($creds, false);
     
     if (!is_wp_error($user)) {
-        // Check if user has a profile
-        $profile_posts = get_posts([
-            'post_type' => 'scn_profile',
+        // Check if user has a member profile
+        $member_posts = get_posts([
+            'post_type' => 'member',
             'meta_query' => [
                 [
                     'key' => 'scn_user_id',
@@ -60,12 +61,12 @@ if ($_POST && isset($_POST['scn_member_login'])) {
             'post_status' => 'publish'
         ]);
         
-        if (!empty($profile_posts)) {
-            // User has profile, redirect to frontend profile page
-            wp_redirect(home_url('/members-profile/?profile_id=' . $profile_posts[0]->ID));
+        if (!empty($member_posts)) {
+            // User has member profile, redirect to member CPT URL format: /member/slug-name
+            wp_redirect(get_permalink($member_posts[0]->ID));
         } else {
-            // User doesn't have profile, redirect to profile creation
-            wp_redirect(admin_url('post-new.php?post_type=scn_profile'));
+            // User doesn't have profile, redirect to member creation
+            wp_redirect(admin_url('post-new.php?post_type=member'));
         }
         exit;
     } else {
@@ -156,7 +157,7 @@ get_header();
                     </a>
                 </div>
 
-                <button type="submit" name="scn_member_login" class="scn-login-btn">
+                <button type="submit" name="member_login" class="scn-login-btn">
                     <span class="scn-btn-text"><?php _e('Sign In', 'scn-membership'); ?></span>
                     <span class="scn-btn-loading" style="display: none;">
                         <span class="dashicons dashicons-update"></span>
@@ -596,8 +597,6 @@ get_header();
 <script>
 // Simple, error-free JavaScript
 jQuery(document).ready(function($) {
-    console.log('Login page loaded');
-    
     // Toggle password visibility
     $('.scn-toggle-password').on('click', function(e) {
         e.preventDefault();
@@ -632,8 +631,6 @@ jQuery(document).ready(function($) {
     if ($username.length) {
         $username.focus();
     }
-    
-    console.log('Login page JavaScript initialized');
 });
 </script>
 

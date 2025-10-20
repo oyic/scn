@@ -67,7 +67,7 @@ $current_user = wp_get_current_user();
         <h2>Profile Status</h2>
         <?php
         $profile_posts = get_posts([
-            'post_type' => 'scn_profile',
+            'post_type' => 'profile',
             'meta_query' => [
                 [
                     'key' => 'scn_user_id',

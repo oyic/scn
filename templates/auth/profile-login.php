@@ -29,7 +29,7 @@ if (scn_is_profile_authenticated() && !current_user_can('edit_pages')) {
 }
 
 // Handle login form submission
-if ($_POST && isset($_POST["scn_profile_login"])) {
+if ($_POST && isset($_POST["profile_login"])) {
     $username = sanitize_text_field($_POST["username"]);
     $password = $_POST["password"];
     
@@ -240,7 +240,7 @@ get_header();
                     <input type="password" id="password" name="password" required>
                 </div>
 
-                <button type="submit" name="scn_profile_login" class="scn-login-btn">
+                <button type="submit" name="profile_login" class="scn-login-btn">
                     <?php _e("Sign In", "scn-membership"); ?>
                 </button>
             </form>

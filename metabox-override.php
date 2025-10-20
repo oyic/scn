@@ -23,7 +23,7 @@ if (!defined('ABSPATH')) {
  * Runs late to override earlier registrations.
  */
 add_action('add_meta_boxes', function() {
-    $post_types = ['scn_course', 'scn_event', 'scn_profile'];
+    $post_types = ['course', 'event', 'profile'];
     global $wp_meta_boxes;
 
     foreach ($post_types as $pt) {
@@ -60,80 +60,8 @@ add_action('add_meta_boxes', function() {
 }, 100); // run late so we beat any other add_meta_boxes
 
 /**
- * Disable Gutenberg sidebar panels for specified CPTs
+ * Gutenberg sidebar panels are no longer disabled - using proper editor switching
  */
-add_action('enqueue_block_editor_assets', function () {
-    $screen = function_exists('get_current_screen') ? get_current_screen() : null;
-    if (!$screen || !in_array($screen->post_type, ['scn_course', 'scn_event', 'scn_profile'], true)) {
-        return;
-    }
-
-    // Dequeue any potential editor panel scripts
-    $handles = [
-        'courses-editor-panel',
-        'events-editor-panel', 
-        'profiles-editor-panel',
-        'scn-courses-editor',
-        'scn-events-editor',
-        'scn-profiles-editor'
-    ];
-
-    foreach ($handles as $handle) {
-        if (wp_script_is($handle, 'enqueued') || wp_script_is($handle, 'registered')) {
-            wp_dequeue_script($handle);
-            wp_deregister_script($handle);
-        }
-    }
-
-    // Disable Gutenberg sidebar panels via JavaScript
-    wp_add_inline_script(
-        'wp-edit-post',
-        "
-        (function() {
-            if (typeof wp !== 'undefined' && wp.plugins) {
-                // Unregister any custom document setting panels
-                wp.hooks.addFilter(
-                    'editor.DocumentSettingsPanel',
-                    'scn-membership/disable-sidebar-panels',
-                    function(panel) {
-                        return null;
-                    }
-                );
-                
-                // Disable the default document settings panel
-                wp.hooks.addFilter(
-                    'editor.DocumentSettingsPanel',
-                    'scn-membership/disable-default-panel',
-                    function(panel) {
-                        if (panel && panel.name === 'document-panel') {
-                            return null;
-                        }
-                        return panel;
-                    }
-                );
-
-                // Unregister any custom plugins that might add sidebar panels
-                const pluginSlugs = [
-                    'scn-courses-editor-panel',
-                    'scn-events-editor-panel',
-                    'scn-profiles-editor-panel'
-                ];
-                
-                pluginSlugs.forEach(function(slug) {
-                    try {
-                        if (wp.plugins.getPlugin && wp.plugins.getPlugin(slug)) {
-                            wp.plugins.unregisterPlugin(slug);
-                        }
-                    } catch(e) {
-                        // Plugin might not be registered, ignore
-                        console.log('Plugin ' + slug + ' was not registered, skipping unregister');
-                    }
-                });
-            }
-        })();
-        "
-    );
-}, 100);
 
 /**
  * Debug logger to confirm what's registered (dev-only)
@@ -141,7 +69,7 @@ add_action('enqueue_block_editor_assets', function () {
  */
 /*
 add_action('current_screen', function($screen) {
-    if (!$screen || !in_array($screen->post_type, ['scn_course', 'scn_event', 'scn_profile'], true)) {
+    if (!$screen || !in_array($screen->post_type, ['course', 'event', 'profile'], true)) {
         return;
     }
     if (!defined('WP_DEBUG') || !WP_DEBUG) {

@@ -26,9 +26,9 @@ class ProfilesIntegrationTest extends TestCase {
         $this->profilesModule->addCapabilities();
         
         $admin_role = \get_role('administrator');
-        $this->assertTrue($admin_role->has_cap('edit_scn_profiles'));
-        $this->assertTrue($admin_role->has_cap('publish_scn_profiles'));
-        $this->assertTrue($admin_role->has_cap('delete_scn_profiles'));
+        $this->assertTrue($admin_role->has_cap('edit_profiles'));
+        $this->assertTrue($admin_role->has_cap('publish_profiles'));
+        $this->assertTrue($admin_role->has_cap('delete_profiles'));
     }
 
     public function testTaxonomyRegistration() {
@@ -38,7 +38,7 @@ class ProfilesIntegrationTest extends TestCase {
         $taxonomy = \get_taxonomy('scn_topic');
         $this->assertNotNull($taxonomy);
         $this->assertEquals('scn_topic', $taxonomy->name);
-        $this->assertContains('scn_profile', $taxonomy->object_type);
+        $this->assertContains('profile', $taxonomy->object_type);
     }
 
     public function testFilterHooks() {
@@ -61,11 +61,11 @@ class ProfilesIntegrationTest extends TestCase {
     public function testPostTypeRegistration() {
         // Test that the post type is registered
         $post_types = \get_post_types(['public' => true], 'names');
-        $this->assertContains('scn_profile', $post_types);
+        $this->assertContains('profile', $post_types);
         
-        $post_type = \get_post_type_object('scn_profile');
+        $post_type = \get_post_type_object('profile');
         $this->assertNotNull($post_type);
-        $this->assertEquals('scn_profile', $post_type->name);
+        $this->assertEquals('profile', $post_type->name);
         $this->assertTrue($post_type->public);
         $this->assertTrue($post_type->show_in_rest);
     }
@@ -80,7 +80,7 @@ class ProfilesIntegrationTest extends TestCase {
             'scn_main_url',
             'scn_social_links',
             'scn_bio',
-            'scn_member_since',
+            'member_since',
             'scn_topics',
             'scn_gallery_images',
             'scn_featured_video_url',
@@ -217,7 +217,7 @@ class ProfilesIntegrationTest extends TestCase {
     private function createTestPost() {
         $post_data = [
             'post_title' => 'Test Profile',
-            'post_type' => 'scn_profile',
+            'post_type' => 'profile',
             'post_status' => 'publish',
             'post_content' => 'Test content'
         ];

@@ -83,7 +83,7 @@ try {
         SELECT p.ID, p.post_title 
         FROM wp_posts p 
         INNER JOIN wp_postmeta pm ON p.ID = pm.post_id 
-        WHERE p.post_type = 'scn_profile' 
+        WHERE p.post_type = 'profile' 
         AND pm.meta_key = 'scn_user_id' 
         AND pm.meta_value = ? 
         AND p.post_status = 'publish'
@@ -110,7 +110,7 @@ try {
                 ping_status, post_password, post_name, to_ping, 
                 pinged, post_modified, post_modified_gmt, post_content_filtered, 
                 post_parent, guid, menu_order, post_type, post_mime_type, comment_count
-            ) VALUES (?, NOW(), NOW(), '', ?, '', 'publish', 'closed', 'closed', '', ?, '', '', NOW(), NOW(), '', 0, '', 0, 'scn_profile', '', 0)
+            ) VALUES (?, NOW(), NOW(), '', ?, '', 'publish', 'closed', 'closed', '', ?, '', '', NOW(), NOW(), '', 0, '', 0, 'profile', '', 0)
         ");
         
         $stmt->execute([
@@ -124,7 +124,7 @@ try {
         // Add profile meta
         $stmt = $pdo->prepare("INSERT INTO wp_postmeta (post_id, meta_key, meta_value) VALUES (?, ?, ?)");
         $stmt->execute([$profile_id, 'scn_user_id', $user_id]);
-        $stmt->execute([$profile_id, 'scn_member_since', date('Y-m-d H:i:s')]);
+        $stmt->execute([$profile_id, 'member_since', date('Y-m-d H:i:s')]);
         
         echo "<div class='success'>";
         echo "<h3>✅ Profile Created!</h3>";

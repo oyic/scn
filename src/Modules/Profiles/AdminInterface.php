@@ -15,8 +15,8 @@ class AdminInterface {
     public function enqueueAdminScripts($hook) {
         global $post_type;
 
-        // Check if we're on the profile edit screen
-        if ($post_type !== 'scn_profile' || !in_array($hook, ['post.php', 'post-new.php'])) {
+        // Check if we're on the member edit screen
+        if ($post_type !== 'member' || !in_array($hook, ['post.php', 'post-new.php'])) {
             return;
         }
 
@@ -45,7 +45,7 @@ class AdminInterface {
 
         wp_localize_script('scn-profiles-admin', 'scnProfilesAdmin', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('scn_profiles_admin'),
+            'nonce' => wp_create_nonce('profiles_admin'),
             'strings' => [
                 'selectImages' => __('Select Images', 'scn-membership'),
                 'selectFiles' => __('Select Files', 'scn-membership'),
@@ -65,16 +65,50 @@ class AdminInterface {
     }
 
     public function handleGalleryUpload() {
-        check_ajax_referer('scn_profiles_admin', 'nonce');
+        check_ajax_referer('profiles_admin', 'nonce');
 
         if (!current_user_can('edit_posts')) {
             wp_die(__('Insufficient permissions.', 'scn-membership'));
         }
 
         $post_id = intval($_POST['post_id']);
-        if (!$post_id || get_post_type($post_id) !== 'scn_profile') {
+        $post_type = get_post_type($post_id);
+        if (!$post_id || $post_type !== 'member') {
             wp_send_json_error(__('Invalid post ID.', 'scn-membership'));
         }
+
+        // Get member details for gallery naming BEFORE upload
+        $basic_info = get_field('basic_info', $post_id);
+        $first_name = $basic_info['first_name'] ?? get_post_meta($post_id, 'scn_first_name', true);
+        $last_name = $basic_info['last_name'] ?? get_post_meta($post_id, 'scn_last_name', true);
+        $credentials = $basic_info['credentials'] ?? get_post_meta($post_id, 'scn_credentials', true);
+        
+        // Get next sequential number for gallery
+        $gallery_images = get_field('gallery_images', $post_id) ?: get_post_meta($post_id, 'scn_gallery_images', true) ?: [];
+        $next_number = is_array($gallery_images) ? count($gallery_images) + 1 : 1;
+        $num = str_pad($next_number, 2, '0', STR_PAD_LEFT);
+        
+        // Generate filename BEFORE upload
+        $file_info = pathinfo($_FILES['file']['name']);
+        $extension = strtolower($file_info['extension'] ?? 'jpg');
+        
+        $first_slug = sanitize_title($first_name);
+        $last_slug = sanitize_title($last_name);
+        $creds_slug = $credentials ? sanitize_title($credentials) : '';
+        
+        if ($creds_slug) {
+            $new_filename = "{$first_slug}-{$last_slug}-{$creds_slug}-gallery-photo-{$num}.{$extension}";
+            $base_name = "{$first_slug}-{$last_slug}-{$creds_slug}-gallery-photo-{$num}";
+        } else {
+            $new_filename = "{$first_slug}-{$last_slug}-gallery-photo-{$num}.{$extension}";
+            $base_name = "{$first_slug}-{$last_slug}-gallery-photo-{$num}";
+        }
+        
+        // Override filename before WordPress processes the upload
+        add_filter('wp_handle_upload_prefilter', function($file) use ($new_filename) {
+            $file['name'] = $new_filename;
+            return $file;
+        });
 
         if (!function_exists('wp_handle_upload')) {
             require_once(ABSPATH . 'wp-admin/includes/file.php');
@@ -91,11 +125,10 @@ class AdminInterface {
         if ($movefile && !isset($movefile['error'])) {
             $filename = $movefile['file'];
             $wp_filetype = wp_check_filetype(basename($filename), null);
-            $wp_upload_dir = wp_upload_dir();
 
             $attachment = [
                 'post_mime_type' => $wp_filetype['type'],
-                'post_title' => preg_replace('/\.[^.]+$/', '', basename($filename)),
+                'post_title' => $base_name,
                 'post_content' => '',
                 'post_status' => 'inherit',
                 'post_parent' => $post_id,
@@ -108,14 +141,17 @@ class AdminInterface {
                 $attachment_data = wp_generate_attachment_metadata($attachment_id, $filename);
                 wp_update_attachment_metadata($attachment_id, $attachment_data);
 
-                // Process the image for SEO naming and alt text
-                $image_processor = new ImageProcessor();
-                $image_processor->processProfileImage($attachment_id);
+                // Set alt text to match filename
+                update_post_meta($attachment_id, '_wp_attachment_image_alt', $base_name);
 
-                // Add to gallery
-                $gallery_images = get_post_meta($post_id, 'scn_gallery_images', true) ?: [];
-                $gallery_images[] = $attachment_id;
-                update_post_meta($post_id, 'scn_gallery_images', $gallery_images);
+                // Add to gallery - prefer ACF field
+                if (function_exists('get_field')) {
+                    $gallery_images[] = $attachment_id;
+                    update_field('gallery_images', $gallery_images, $post_id);
+                } else {
+                    $gallery_images[] = $attachment_id;
+                    update_post_meta($post_id, 'scn_gallery_images', $gallery_images);
+                }
 
                 wp_send_json_success([
                     'attachment_id' => $attachment_id,
@@ -129,14 +165,14 @@ class AdminInterface {
     }
 
     public function handlePressKitUpload() {
-        check_ajax_referer('scn_profiles_admin', 'nonce');
+        check_ajax_referer('profiles_admin', 'nonce');
 
         if (!current_user_can('edit_posts')) {
             wp_die(__('Insufficient permissions.', 'scn-membership'));
         }
 
         $post_id = intval($_POST['post_id']);
-        if (!$post_id || get_post_type($post_id) !== 'scn_profile') {
+        if (!$post_id || get_post_type($post_id) !== 'member') {
             wp_send_json_error(__('Invalid post ID.', 'scn-membership'));
         }
 
@@ -168,21 +204,26 @@ class AdminInterface {
 
             if (!is_wp_error($attachment_id)) {
                 // Rename file for SEO
-                $first_name = get_post_meta($post_id, 'scn_first_name', true);
-                $last_name = get_post_meta($post_id, 'scn_last_name', true);
+                $basic_info = get_field('basic_info', $post_id);
+                $first_name = $basic_info['first_name'] ?? get_post_meta($post_id, 'scn_first_name', true);
+                $last_name = $basic_info['last_name'] ?? get_post_meta($post_id, 'scn_last_name', true);
+                $credentials = $basic_info['credentials'] ?? get_post_meta($post_id, 'scn_credentials', true);
                 
                 if ($first_name && $last_name) {
                     $image_processor = new ImageProcessor();
-                    $new_filename = $image_processor->generatePressKitFilename($first_name, $last_name, basename($filename));
+                    $new_filename = $image_processor->generatePressKitFilename($first_name, $last_name, $credentials, basename($filename), $post_id);
                     
                     $upload_dir = wp_upload_dir();
                     $new_file_path = $upload_dir['path'] . '/' . $new_filename;
                     
                     if (rename($filename, $new_file_path)) {
                         update_attached_file($attachment_id, $new_file_path);
+                        
+                        // Update title to match filename (without extension)
+                        $base_name = preg_replace('/\.[^.]+$/', '', $new_filename);
                         wp_update_post([
                             'ID' => $attachment_id,
-                            'post_title' => $new_filename,
+                            'post_title' => $base_name,
                         ]);
                     }
                 }
@@ -204,7 +245,7 @@ class AdminInterface {
     }
 
     public function handleGalleryReorder() {
-        check_ajax_referer('scn_profiles_admin', 'nonce');
+        check_ajax_referer('profiles_admin', 'nonce');
 
         if (!current_user_can('edit_posts')) {
             wp_die(__('Insufficient permissions.', 'scn-membership'));
@@ -213,7 +254,7 @@ class AdminInterface {
         $post_id = intval($_POST['post_id']);
         $image_ids = array_map('intval', $_POST['image_ids']);
 
-        if (!$post_id || get_post_type($post_id) !== 'scn_profile') {
+        if (!$post_id || get_post_type($post_id) !== 'profile') {
             wp_send_json_error(__('Invalid post ID.', 'scn-membership'));
         }
 
@@ -222,7 +263,7 @@ class AdminInterface {
     }
 
     public function handleRemoveGalleryImage() {
-        check_ajax_referer('scn_profiles_admin', 'nonce');
+        check_ajax_referer('profiles_admin', 'nonce');
 
         if (!current_user_can('edit_posts')) {
             wp_die(__('Insufficient permissions.', 'scn-membership'));
@@ -231,7 +272,7 @@ class AdminInterface {
         $post_id = intval($_POST['post_id']);
         $image_id = intval($_POST['image_id']);
 
-        if (!$post_id || get_post_type($post_id) !== 'scn_profile') {
+        if (!$post_id || get_post_type($post_id) !== 'profile') {
             wp_send_json_error(__('Invalid post ID.', 'scn-membership'));
         }
 
@@ -243,7 +284,7 @@ class AdminInterface {
     }
 
     public function handleRemovePressKitFile() {
-        check_ajax_referer('scn_profiles_admin', 'nonce');
+        check_ajax_referer('profiles_admin', 'nonce');
 
         if (!current_user_can('edit_posts')) {
             wp_die(__('Insufficient permissions.', 'scn-membership'));
@@ -252,7 +293,7 @@ class AdminInterface {
         $post_id = intval($_POST['post_id']);
         $file_id = intval($_POST['file_id']);
 
-        if (!$post_id || get_post_type($post_id) !== 'scn_profile') {
+        if (!$post_id || get_post_type($post_id) !== 'profile') {
             wp_send_json_error(__('Invalid post ID.', 'scn-membership'));
         }
 

@@ -24,7 +24,7 @@ echo "<h2>📋 All SCN Profiles</h2>";
 echo "</div>";
 
 $profiles = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'posts_per_page' => -1,
     'post_status' => 'publish'
 ]);
@@ -72,7 +72,7 @@ if (empty($users)) {
     
     foreach ($users as $user) {
         $has_profile = get_posts([
-            'post_type' => 'scn_profile',
+            'post_type' => 'profile',
             'meta_query' => [
                 [
                     'key' => 'scn_user_id',

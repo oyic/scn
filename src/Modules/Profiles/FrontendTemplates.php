@@ -5,52 +5,78 @@ namespace SCN\Membership\Modules\Profiles;
 class FrontendTemplates {
     public function register() {
         add_action('wp_enqueue_scripts', [$this, 'enqueueScripts']);
-        add_filter('template_include', [$this, 'templateInclude']);
+        // Template handling moved to main plugin file to avoid conflicts
+        // add_filter('template_include', [$this, 'templateInclude']);
         add_action('init', [$this, 'addRewriteRules']);
         add_filter('query_vars', [$this, 'addQueryVars']);
     }
 
     public function enqueueScripts() {
-        if (is_singular('scn_profile')) {
+        if (is_singular('member')) {
+            $deps = ['jquery'];
+            
+            // Enqueue WordPress media library and jQuery UI Sortable for gallery management
+            if (is_user_logged_in()) {
+                $profile_id = get_the_ID();
+                $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+                $is_owner = (get_current_user_id() == $profile_user_id);
+                $is_admin = current_user_can('edit_members') || current_user_can('edit_others_posts') || current_user_can('administrator');
+                
+                // Enqueue media for profile owner or admin
+                if ($is_owner || $is_admin) {
+                    wp_enqueue_media();
+                    wp_enqueue_script('jquery-ui-sortable');
+                    $deps[] = 'media-editor';
+                    $deps[] = 'jquery-ui-sortable';
+                }
+            }
+            
             wp_enqueue_script(
                 'scn-profiles-frontend',
                 SCN_MEMBERSHIP_URL . 'assets/js/profiles-frontend.js',
-                ['jquery'],
+                $deps,
                 SCN_MEMBERSHIP_VERSION,
                 true
             );
 
-            wp_enqueue_style(
-                'scn-profiles-frontend',
-                SCN_MEMBERSHIP_URL . 'assets/css/profiles.css',
-                [],
-                SCN_MEMBERSHIP_VERSION
-            );
+            // Note: profiles.css doesn't exist - all styles are inline in the template
+            // wp_enqueue_style(
+            //     'scn-profiles-frontend',
+            //     SCN_MEMBERSHIP_URL . 'assets/css/profiles.css',
+            //     [],
+            //     SCN_MEMBERSHIP_VERSION
+            // );
 
-            wp_localize_script('scn-profiles-frontend', 'scnProfiles', [
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('scn_profiles_frontend'),
-            ]);
+            // Only localize script if it hasn't been localized already
+            static $scn_profiles_localized = false;
+            if (!$scn_profiles_localized) {
+                wp_localize_script('scn-profiles-frontend', 'scnProfiles', [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('profiles_frontend'),
+                    'isLoggedIn' => is_user_logged_in(),
+                ]);
+                $scn_profiles_localized = true;
+            }
         }
     }
 
     public function addRewriteRules() {
         add_rewrite_rule(
             '^profiles/([^/]+)/?$',
-            'index.php?scn_profile=$matches[1]',
+            'index.php?member=$matches[1]',
             'top'
         );
     }
 
     public function addQueryVars($vars) {
-        $vars[] = 'scn_profile';
+        $vars[] = 'member';
         return $vars;
     }
 
     public function templateInclude($template) {
-        if (get_query_var('scn_profile')) {
-            $profile_slug = get_query_var('scn_profile');
-            $profile = get_page_by_path($profile_slug, OBJECT, 'scn_profile');
+        if (get_query_var('member')) {
+            $profile_slug = get_query_var('member');
+            $profile = get_page_by_path($profile_slug, OBJECT, 'member');
             
             if ($profile) {
                 return SCN_MEMBERSHIP_PATH . 'templates/profiles/single-profile.php';

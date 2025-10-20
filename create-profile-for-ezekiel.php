@@ -35,7 +35,7 @@ echo "</div>";
 
 // Check if ezekiel already has a profile
 $existing_profile = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'meta_query' => [
         [
             'key' => 'scn_user_id',
@@ -63,7 +63,7 @@ if (!empty($existing_profile)) {
     
     $profile_data = [
         'post_title' => $user->display_name ?: $user->user_login,
-        'post_type' => 'scn_profile',
+        'post_type' => 'profile',
         'post_status' => 'publish',
         'post_author' => $user->ID,
     ];
@@ -73,7 +73,7 @@ if (!empty($existing_profile)) {
     if ($profile_id) {
         // Set profile meta
         update_post_meta($profile_id, 'scn_user_id', $user->ID);
-        update_post_meta($profile_id, 'scn_member_since', current_time('mysql'));
+        update_post_meta($profile_id, 'member_since', current_time('mysql'));
         
         // Set basic profile info from user data
         if ($user->first_name) {

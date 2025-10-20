@@ -50,7 +50,7 @@ update_user_meta($user_id, 'display_name', $test_user_data['display_name']);
 
 // Create profile post
 $profile_posts = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'meta_query' => [
         [
             'key' => 'scn_user_id',
@@ -65,7 +65,7 @@ $profile_posts = get_posts([
 if (empty($profile_posts)) {
     $profile_data = [
         'post_title' => $test_user_data['first_name'] . ' ' . $test_user_data['last_name'],
-        'post_type' => 'scn_profile',
+        'post_type' => 'profile',
         'post_status' => 'publish',
         'post_author' => $user_id,
         'post_content' => 'This is a test member profile created for authentication testing.',
@@ -81,7 +81,7 @@ if (empty($profile_posts)) {
         update_post_meta($profile_id, 'scn_bio', 'This is a test member profile for SCN Membership authentication testing.');
         update_post_meta($profile_id, 'scn_location', 'Test City, TC');
         update_post_meta($profile_id, 'scn_credentials', 'Test Member, SCN');
-        update_post_meta($profile_id, 'scn_member_since', current_time('mysql'));
+        update_post_meta($profile_id, 'member_since', current_time('mysql'));
         
         // Add some test topics
         $topics = ['Technology', 'Testing', 'Authentication'];

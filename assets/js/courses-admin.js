@@ -112,21 +112,7 @@ jQuery(document).ready(function($) {
             }
         }
         
-        // Validate outcomes
-        const outcomes = [];
-        $('#scn-outcomes-container input[type="text"]').each(function() {
-            const value = $(this).val().trim();
-            if (value) {
-                outcomes.push(value);
-            }
-        });
-        
-        if (outcomes.length === 0) {
-            errors.push({
-                field: '#scn-outcomes-container',
-                message: scnCoursesAdmin.outcomesError
-            });
-        }
+        // Outcomes validation removed - ACF handles this via field validation
         
         // Validate on-demand link if provided
         const ondemandLink = $('#scn_ondemand_link').val().trim();

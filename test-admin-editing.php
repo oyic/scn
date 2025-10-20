@@ -64,9 +64,9 @@ foreach ($page_slugs as $slug) {
         echo "<p><strong>Edit URL:</strong> <a href='$edit_url' target='_blank'>$edit_url</a></p>";
         echo "<p><strong>View URL:</strong> <a href='$view_url' target='_blank'>$view_url</a></p>";
         echo "<p><strong>Preview URL:</strong> <a href='$preview_url' target='_blank'>$preview_url</a></p>";
-        echo "<p><strong>Shortcode:</strong> [" . ($slug === 'member-login' ? 'scn_member_login' : 
-                                                   ($slug === 'member-dashboard' ? 'scn_member_dashboard' : 
-                                                   ($slug === 'member-register' ? 'scn_member_register' : 'scn_test_auth'))) . "]</p>";
+        echo "<p><strong>Shortcode:</strong> [" . ($slug === 'member-login' ? 'member_login' : 
+                                                   ($slug === 'member-dashboard' ? 'member_dashboard' : 
+                                                   ($slug === 'member-register' ? 'member_register' : 'scn_test_auth'))) . "]</p>";
         echo "</div>";
         
         $pages_info[$slug] = [
@@ -104,7 +104,7 @@ if (is_user_logged_in()) {
     $original_pagenow = $pagenow;
     $pagenow = 'post.php';
     
-    $login_shortcode = do_shortcode('[scn_member_login]');
+    $login_shortcode = do_shortcode('[member_login]');
     echo $login_shortcode ? substr(strip_tags($login_shortcode), 0, 100) . '...' : 'No output (redirected)';
     
     $pagenow = $original_pagenow;

@@ -19,7 +19,7 @@ if (!is_user_logged_in()) {
 // Get current user's profile
 $user_id = get_current_user_id();
 $profile_posts = get_posts([
-    'post_type' => 'scn_profile',
+    'post_type' => 'profile',
     'meta_query' => [
         [
             'key' => 'scn_user_id',
@@ -33,14 +33,14 @@ $profile_posts = get_posts([
 
 if (empty($profile_posts)) {
     // No profile found, redirect to create one
-    wp_redirect(admin_url('post-new.php?post_type=scn_profile'));
+    wp_redirect(admin_url('post-new.php?post_type=profile'));
     exit;
 }
 
 $profile = $profile_posts[0];
 $first_name = get_post_meta($profile->ID, 'scn_first_name', true);
 $last_name = get_post_meta($profile->ID, 'scn_last_name', true);
-$member_since = get_post_meta($profile->ID, 'scn_member_since', true);
+$member_since = get_post_meta($profile->ID, 'member_since', true);
 
 ?>
 <?php if (!$is_shortcode): ?>
@@ -931,49 +931,11 @@ body {
                 </div>
             </div>
 
-            <!-- Events Section -->
-            <div class="scn-dashboard-events">
-                <div class="scn-events-section">
-                    <div class="scn-events-section-header">
-                        <h3><?php _e('My Created Events', 'scn-membership'); ?></h3>
-                        <button type="button" class="scn-btn scn-btn-primary scn-add-event-btn">
-                            <span class="dashicons dashicons-plus"></span>
-                            <?php _e('Create Event', 'scn-membership'); ?>
-                        </button>
-                    </div>
-                    <div class="scn-events-table-wrapper">
-                        <table class="scn-events-table">
-                            <thead>
-                                <tr>
-                                    <th class="scn-event-name"><?php _e('Event Name', 'scn-membership'); ?></th>
-                                    <th class="scn-event-location"><?php _e('Location', 'scn-membership'); ?></th>
-                                    <th class="scn-event-date"><?php _e('Start Date', 'scn-membership'); ?></th>
-                                    <th class="scn-event-status"><?php _e('Status', 'scn-membership'); ?></th>
-                                    <th class="scn-event-actions"><?php _e('Actions', 'scn-membership'); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody id="scn-created-events">
-                                <tr>
-                                    <td colspan="5" class="scn-loading">
-                        <span class="dashicons dashicons-update"></span>
-                                        <?php _e('Loading your created events...', 'scn-membership'); ?>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
 
             <!-- Quick Actions Section -->
             <div class="scn-dashboard-quick-actions">
                 <h2><?php _e('Quick Actions', 'scn-membership'); ?></h2>
                 <div class="scn-actions-grid">
-                    <a href="<?php echo esc_url(home_url('/events/')); ?>" class="scn-action-card">
-                        <span class="dashicons dashicons-calendar-alt"></span>
-                        <h3><?php _e('Browse Events', 'scn-membership'); ?></h3>
-                        <p><?php _e('View upcoming events and sessions', 'scn-membership'); ?></p>
-                    </a>
                     
                     <a href="<?php echo esc_url(home_url('/courses/')); ?>" class="scn-action-card">
                         <span class="dashicons dashicons-welcome-learn-more"></span>
@@ -1043,16 +1005,16 @@ body {
                         <h3><span class="dashicons dashicons-welcome-learn-more"></span>Basic Information</h3>
                         <div class="scn-form-grid">
                             <div class="scn-form-group full-width">
-                                <label for="scn_course_title">Course Title <span class="required">*</span></label>
-                                <input type="text" id="scn_course_title" name="scn_course_title" required placeholder="Enter the main course title">
+                                <label for="course_title">Course Title <span class="required">*</span></label>
+                                <input type="text" id="course_title" name="course_title" required placeholder="Enter the main course title">
         </div>
                             <div class="scn-form-group full-width">
-                                <label for="scn_course_subtitle">Subtitle</label>
-                                <input type="text" id="scn_course_subtitle" name="scn_course_subtitle" placeholder="Brief subtitle for the course">
+                                <label for="course_subtitle">Subtitle</label>
+                                <input type="text" id="course_subtitle" name="course_subtitle" placeholder="Brief subtitle for the course">
         </div>
                             <div class="scn-form-group full-width">
-                                <label for="scn_course_description">Description <span class="required">*</span></label>
-                                <textarea id="scn_course_description" name="scn_course_description" required placeholder="Brief description of the course content and objectives..." rows="5"></textarea>
+                                <label for="course_description">Description <span class="required">*</span></label>
+                                <textarea id="course_description" name="course_description" required placeholder="Brief description of the course content and objectives..." rows="5"></textarea>
                             </div>
         </div>
     </div>
@@ -1062,13 +1024,13 @@ body {
                         <div class="scn-form-grid">
                             <div class="scn-form-group">
                                 <label>
-                                    <input type="checkbox" id="scn_course_ce_enabled" name="scn_course_ce_enabled" value="1">
+                                    <input type="checkbox" id="course_ce_enabled" name="course_ce_enabled" value="1">
                                     This course provides continuing education credits
                                 </label>
         </div>
                             <div class="scn-form-group">
-                                <label for="scn_course_ce_hours">CE Hours</label>
-                                <input type="number" id="scn_course_ce_hours" name="scn_course_ce_hours" min="0.5" step="0.5" disabled>
+                                <label for="course_ce_hours">CE Hours</label>
+                                <input type="number" id="course_ce_hours" name="course_ce_hours" min="0.5" step="0.5" disabled>
                                 <div class="scn-form-help">Number of continuing education hours (minimum 0.5, step 0.5)</div>
                             </div>
                         </div>
@@ -1083,19 +1045,19 @@ body {
                                 <label>Select the format(s) for this course:</label>
                                 <div class="scn-checkbox-group scn-formats-grid">
                                     <label class="scn-format-item">
-                                        <input type="checkbox" name="scn_course_formats[]" value="in-person" id="format_in_person">
+                                        <input type="checkbox" name="course_formats[]" value="in-person" id="format_in_person">
                                         <span>In-Person</span>
                                     </label>
                                     <label class="scn-format-item">
-                                        <input type="checkbox" name="scn_course_formats[]" value="virtual" id="format_virtual">
+                                        <input type="checkbox" name="course_formats[]" value="virtual" id="format_virtual">
                                         <span>Virtual</span>
                                     </label>
                                     <label class="scn-format-item">
-                                        <input type="checkbox" name="scn_course_formats[]" value="hybrid" id="format_hybrid">
+                                        <input type="checkbox" name="course_formats[]" value="hybrid" id="format_hybrid">
                                         <span>Hybrid</span>
                                     </label>
                                     <label class="scn-format-item">
-                                        <input type="checkbox" name="scn_course_formats[]" value="self-paced" id="format_self_paced">
+                                        <input type="checkbox" name="course_formats[]" value="self-paced" id="format_self_paced">
                                         <span>Self-Paced</span>
                                     </label>
         </div>
@@ -1110,7 +1072,7 @@ body {
                                 <label>What will participants learn from this course? <span class="required">*</span></label>
                                 <div id="scn-outcomes-container">
                                     <div class="scn-outcome-item">
-                                        <input type="text" name="scn_course_outcomes[0]" placeholder="Learning outcome" class="regular-text" required>
+                                        <input type="text" name="course_outcomes[0]" placeholder="Learning outcome" class="regular-text" required>
                                         <button type="button" class="scn-remove-outcome" style="display: none;">Remove</button>
         </div>
         </div>
@@ -1155,7 +1117,7 @@ body {
                                     // Ensure taxonomy is registered
                                     if (!taxonomy_exists('scn_topic')) {
                                         // Register taxonomy if not exists (fallback)
-                                        register_taxonomy('scn_topic', 'scn_course', [
+                                        register_taxonomy('scn_topic', [], [ // Removed 'course' from object types
                                             'labels' => [
                                                 'name' => __('Topics', 'scn-membership'),
                                                 'singular_name' => __('Topic', 'scn-membership'),
@@ -1187,13 +1149,13 @@ body {
                                     if (!is_wp_error($topic_terms) && !empty($topic_terms)) {
                                         foreach ($topic_terms as $term) {
                                             echo '<label class="scn-topic-item">';
-                                            echo '<input type="checkbox" name="scn_course_topics[]" value="' . esc_attr($term->term_id) . '" id="topic_' . esc_attr($term->term_id) . '">';
+                                            echo '<input type="checkbox" name="course_topics[]" value="' . esc_attr($term->term_id) . '" id="topic_' . esc_attr($term->term_id) . '">';
                                             echo '<span>' . esc_html($term->name) . '</span>';
                                             echo '</label>';
                                         }
                                     } else {
                                         echo '<div class="scn-no-topics">';
-                                        echo '<p>No topics available. <a href="' . admin_url('edit-tags.php?taxonomy=scn_topic&post_type=scn_course') . '" target="_blank">Add topics in admin</a></p>';
+                                        echo '<p>No topics available. <a href="' . admin_url('edit-tags.php?taxonomy=scn_topic&post_type=course') . '" target="_blank">Add topics in admin</a></p>';
                                         if (defined('WP_DEBUG') && WP_DEBUG) {
                                             echo '<p><small>Debug: ' . (is_wp_error($topic_terms) ? $topic_terms->get_error_message() : 'No terms found') . '</small></p>';
                                         }
@@ -1219,90 +1181,6 @@ body {
     </div>
 </div>
 
-<!-- Add Event Modal -->
-<div id="scn-add-event-modal" class="scn-modal" style="display: none;">
-    <div class="scn-modal-overlay"></div>
-    <div class="scn-modal-content">
-        <div class="scn-modal-header">
-            <h2><?php _e('Create New Event', 'scn-membership'); ?></h2>
-            <button type="button" class="scn-modal-close">
-                <span class="dashicons dashicons-no-alt"></span>
-            </button>
-            </div>
-        <div class="scn-modal-body">
-            <form id="scn-add-event-form">
-                <div class="scn-form-section">
-                    <h3><span class="dashicons dashicons-calendar-alt"></span>Event Information</h3>
-                    <div class="scn-form-grid">
-                        <div class="scn-form-group full-width">
-                            <label for="scn_event_name">Event Name <span class="required">*</span></label>
-                            <input type="text" id="scn_event_name" name="scn_event_name" required placeholder="Enter event name">
-            </div>
-                        <div class="scn-form-group full-width">
-                            <label for="scn_event_official_name">Official Name (if different)</label>
-                            <input type="text" id="scn_event_official_name" name="scn_event_official_name" placeholder="Official event name">
-        </div>
-                        <div class="scn-form-group full-width">
-                            <label for="scn_event_description">Description</label>
-                            <textarea id="scn_event_description" name="scn_event_description" placeholder="Brief description of the event..." rows="4"></textarea>
-        </div>
-                    </div>
-                </div>
-
-                <div class="scn-form-section">
-                    <h3><span class="dashicons dashicons-location"></span>Location</h3>
-                    <div class="scn-form-grid">
-                        <div class="scn-form-group">
-                            <label for="scn_event_location_city">City</label>
-                            <input type="text" id="scn_event_location_city" name="scn_event_location_city" placeholder="City">
-                        </div>
-                        <div class="scn-form-group">
-                            <label for="scn_event_location_region">State/Region</label>
-                            <input type="text" id="scn_event_location_region" name="scn_event_location_region" placeholder="State/Region">
-                        </div>
-                        <div class="scn-form-group">
-                            <label for="scn_event_location_country">Country</label>
-                            <input type="text" id="scn_event_location_country" name="scn_event_location_country" placeholder="Country">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="scn-form-section">
-                    <h3><span class="dashicons dashicons-calendar"></span>Dates</h3>
-                    <div class="scn-form-grid">
-                        <div class="scn-form-group">
-                            <label for="scn_event_start_date">Start Date <span class="required">*</span></label>
-                            <input type="date" id="scn_event_start_date" name="scn_event_start_date" required>
-                        </div>
-                        <div class="scn-form-group">
-                            <label for="scn_event_end_date">End Date</label>
-                            <input type="date" id="scn_event_end_date" name="scn_event_end_date">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="scn-form-section">
-                    <h3><span class="dashicons dashicons-admin-links"></span>Website</h3>
-                    <div class="scn-form-grid">
-                        <div class="scn-form-group full-width">
-                            <label for="scn_event_website">Event Website URL</label>
-                            <input type="url" id="scn_event_website" name="scn_event_website" placeholder="https://">
-                        </div>
-                    </div>
-                </div>
-            </form>
-        </div>
-        <div class="scn-modal-footer">
-            <button type="submit" form="scn-add-event-form" class="scn-btn scn-btn-primary scn-save-event">
-                <span class="dashicons dashicons-yes-alt"></span>
-                <?php _e('Create Event', 'scn-membership'); ?>
-            </button>
-            <button type="button" class="scn-btn scn-btn-secondary scn-modal-close">
-                <?php _e('Cancel', 'scn-membership'); ?>
-            </button>
-        </div>
-    </div>
-</div>
 
 <script type="text/template" id="scn-completion-template">
     {{#unless is_complete}}
@@ -1975,8 +1853,8 @@ jQuery(document).ready(function($) {
     });
 
     // Handle CE toggle
-    $(document).on('change', '#scn_course_ce_enabled', function() {
-        const ceHours = $('#scn_course_ce_hours');
+    $(document).on('change', '#course_ce_enabled', function() {
+        const ceHours = $('#course_ce_hours');
         if (this.checked) {
             ceHours.prop('disabled', false);
         } else {
@@ -1989,7 +1867,7 @@ jQuery(document).ready(function($) {
         const container = $('#scn-outcomes-container');
         const outcomeIndex = container.find('.scn-outcome-item').length;
         const outcomeItem = $('<div class="scn-outcome-item">' +
-            '<input type="text" name="scn_course_outcomes[' + outcomeIndex + ']" placeholder="Learning outcome" class="regular-text">' +
+            '<input type="text" name="course_outcomes[' + outcomeIndex + ']" placeholder="Learning outcome" class="regular-text">' +
             '<button type="button" class="scn-remove-outcome">Remove</button>' +
             '</div>');
         container.append(outcomeItem);
@@ -2277,7 +2155,7 @@ jQuery(document).ready(function($) {
     function handleUploadSuccess(data, type) {
         if (type === 'profile_image') {
             $('.scn-image-preview').html('<img src="' + data.url + '" class="scn-uploaded-image" alt="Profile Image">');
-            $('#scn_profile_image').val(data.id);
+            $('#profile_image').val(data.id);
         } else if (type === 'gallery') {
             const currentImages = $('#scn_gallery_images').val().split(',').filter(id => id);
             if (!currentImages.includes(data.id.toString())) {

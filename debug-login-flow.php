@@ -120,7 +120,7 @@ if ($user) {
     
     // Check if ezekiel has a profile
     $profile = get_posts([
-        'post_type' => 'scn_profile',
+        'post_type' => 'profile',
         'meta_query' => [
             [
                 'key' => 'scn_user_id',

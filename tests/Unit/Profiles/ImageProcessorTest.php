@@ -49,11 +49,12 @@ class ImageProcessorTest extends TestCase {
     public function testGeneratePressKitFilename() {
         $first_name = 'Jane';
         $last_name = 'Smith';
+        $credentials = 'MBA';
         $original_filename = 'press-kit.pdf';
 
-        $filename = $this->imageProcessor->generatePressKitFilename($first_name, $last_name, $original_filename);
+        $filename = $this->imageProcessor->generatePressKitFilename($first_name, $last_name, $credentials, $original_filename);
 
-        $this->assertStringStartsWith('jane-smith-presskit', $filename);
+        $this->assertStringStartsWith('jane-smith-mba-presskit', $filename);
         $this->assertStringEndsWith('.pdf', $filename);
     }
 

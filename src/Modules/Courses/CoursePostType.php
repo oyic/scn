@@ -7,9 +7,9 @@ class CoursePostType {
         add_action('init', [$this, 'registerPostType']);
         
         // ACF handles meta fields now, so we only need columns and sorting
-        add_filter('manage_scn_course_posts_columns', [$this, 'addCustomColumns'], 20);
-        add_action('manage_scn_course_posts_custom_column', [$this, 'displayCustomColumns'], 10, 2);
-        add_filter('manage_edit-scn_course_sortable_columns', [$this, 'makeSortableColumns']);
+        add_filter('manage_course_posts_columns', [$this, 'addCustomColumns'], 999);
+        add_action('manage_course_posts_custom_column', [$this, 'displayCustomColumns'], 10, 2);
+        add_filter('manage_edit-course_sortable_columns', [$this, 'makeSortableColumns']);
         add_action('pre_get_posts', [$this, 'handleCustomSorting']);
         
         // Ensure taxonomy is connected
@@ -20,7 +20,7 @@ class CoursePostType {
     }
 
     public function registerPostType() {
-        register_post_type('scn_course', [
+        register_post_type('course', [
             'labels' => [
                 'name' => __('Courses', 'scn-membership'),
                 'singular_name' => __('Course', 'scn-membership'),
@@ -32,62 +32,90 @@ class CoursePostType {
                 'search_items' => __('Search Courses', 'scn-membership'),
                 'not_found' => __('No courses found', 'scn-membership'),
                 'not_found_in_trash' => __('No courses found in trash', 'scn-membership'),
+                'featured_image' => __('Course Image', 'scn-membership'),
+                'set_featured_image' => __('Set course image', 'scn-membership'),
+                'remove_featured_image' => __('Remove course image', 'scn-membership'),
+                'use_featured_image' => __('Use as course image', 'scn-membership'),
             ],
             'public' => true,
             'has_archive' => true,
             'rewrite' => ['slug' => 'courses'],
-            'supports' => ['title', 'editor', 'author', 'excerpt', 'custom-fields'],
-            'taxonomies' => ['scn_topic'],
-            'capability_type' => 'scn_course',
+            'supports' => ['title', 'editor', 'excerpt', 'custom-fields'],
+            // 'taxonomies' => ['scn_topic'], // Removed - using ACF field instead
+            'capability_type' => 'course',
             'map_meta_cap' => true,
             'show_in_rest' => true,
             'show_in_menu' => false, // We'll add it to our custom menu
         ]);
         
         // Flush rewrite rules if this is a new post type
-        if (!get_option('scn_course_rewrite_rules_flushed')) {
+        if (!get_option('course_rewrite_rules_flushed')) {
             flush_rewrite_rules();
-            update_option('scn_course_rewrite_rules_flushed', true);
+            update_option('course_rewrite_rules_flushed', true);
         }
+        
+        // Remove any taxonomy metaboxes that might still be registered
+        add_action('add_meta_boxes', [$this, 'removeTaxonomyMetaboxes'], 999);
     }
 
     public function ensureTaxonomyConnection() {
-        // Ensure the taxonomy is properly connected to the course post type
-        if (taxonomy_exists('scn_topic') && post_type_exists('scn_course')) {
-            register_taxonomy_for_object_type('scn_topic', 'scn_course');
-            
-            // Flush rewrite rules to ensure the connection is registered
-            if (!get_option('scn_topic_course_connection_flushed')) {
-                flush_rewrite_rules();
-                update_option('scn_topic_course_connection_flushed', true);
-            }
-        }
+        // Taxonomy connection removed - using ACF field instead of native taxonomy
+        // The scn_topic taxonomy still exists for other purposes, but not connected to course post type
     }
 
     // Meta fields and meta boxes are now handled by ACF
+    
+    /**
+     * Remove taxonomy metaboxes for course post type
+     */
+    public function removeTaxonomyMetaboxes() {
+        $screen = get_current_screen();
+        if ($screen && $screen->post_type === 'course') {
+            // Remove all possible taxonomy metabox IDs
+            remove_meta_box('scn_topicdiv', 'course', 'side');
+            remove_meta_box('scn_topicdiv', 'course', 'normal');
+            remove_meta_box('scn_topicdiv', 'course', 'advanced');
+            remove_meta_box('tagsdiv-scn_topic', 'course', 'side');
+            remove_meta_box('tagsdiv-scn_topic', 'course', 'normal');
+            remove_meta_box('tagsdiv-scn_topic', 'course', 'advanced');
+            remove_meta_box('scn_topic', 'course', 'side');
+            remove_meta_box('scn_topic', 'course', 'normal');
+            remove_meta_box('scn_topic', 'course', 'advanced');
+        }
+    }
 
     public function addCustomColumns($columns) {
+        // Remove default featured image column to avoid duplication
+        unset($columns['featured_image']);
+        
         $new_columns = [];
         
-        // Add thumbnail column after title
+        // Add Course Image column after title
         foreach ($columns as $key => $value) {
             $new_columns[$key] = $value;
             if ($key === 'title') {
-                $new_columns['thumbnail'] = __('Image', 'scn-membership');
+                $new_columns['course_image'] = __('Course Image', 'scn-membership');
             }
         }
         
-        // Add custom columns
-        $new_columns['scn_course_subtitle'] = __('Subtitle', 'scn-membership');
-        $new_columns['scn_course_ce'] = __('CE Credits', 'scn-membership');
-        $new_columns['scn_course_topics'] = __('Topics', 'scn-membership');
+        // Add Topics column
+        $new_columns['course_topics'] = __('Topics', 'scn-membership');
         
         return $new_columns;
     }
 
     public function displayCustomColumns($column, $post_id) {
+        // Prevent duplicate output by checking if we've already processed this column
+        static $processed = [];
+        $key = $post_id . '_' . $column;
+        
+        if (isset($processed[$key])) {
+            return;
+        }
+        $processed[$key] = true;
+        
         switch ($column) {
-            case 'thumbnail':
+            case 'course_image':
                 if (has_post_thumbnail($post_id)) {
                     echo get_the_post_thumbnail($post_id, [50, 50]);
                 } else {
@@ -95,25 +123,19 @@ class CoursePostType {
                 }
                 break;
                 
-            case 'scn_course_subtitle':
-                $subtitle = get_post_meta($post_id, 'scn_course_subtitle', true);
-                echo $subtitle ? esc_html($subtitle) : '—';
-                break;
-                
-            case 'scn_course_ce':
-                $ce_enabled = get_post_meta($post_id, 'scn_course_ce_enabled', true);
-                $ce_hours = get_post_meta($post_id, 'scn_course_ce_hours', true);
-                if ($ce_enabled) {
-                    echo $ce_hours ? $ce_hours . ' hours' : 'Yes';
-                } else {
-                    echo 'No';
-                }
-                break;
-                
-            case 'scn_course_topics':
-                $topics = wp_get_post_terms($post_id, 'scn_topic', ['fields' => 'names']);
-                if (!empty($topics) && !is_wp_error($topics)) {
-                    echo implode(', ', $topics);
+            case 'course_topics':
+                // Get topics from ACF field
+                $topic_ids = get_field('scn_course_topics', $post_id);
+                if (!empty($topic_ids)) {
+                    $topic_links = [];
+                    foreach ($topic_ids as $topic_id) {
+                        $term = get_term($topic_id, 'scn_topic');
+                        if ($term && !is_wp_error($term)) {
+                            $edit_link = admin_url('edit-tags.php?taxonomy=scn_topic&post_type=course&tag_ID=' . $topic_id);
+                            $topic_links[] = '<a href="' . esc_url($edit_link) . '">' . esc_html($term->name) . '</a>';
+                        }
+                    }
+                    echo implode(', ', $topic_links);
                 } else {
                     echo '—';
                 }
@@ -122,8 +144,7 @@ class CoursePostType {
     }
 
     public function makeSortableColumns($columns) {
-        $columns['scn_course_subtitle'] = 'scn_course_subtitle';
-        $columns['scn_course_ce'] = 'scn_course_ce_enabled';
+        // No sortable columns for now
         return $columns;
     }
 
@@ -135,13 +156,13 @@ class CoursePostType {
         $orderby = $query->get('orderby');
 
         switch ($orderby) {
-            case 'scn_course_subtitle':
-                $query->set('meta_key', 'scn_course_subtitle');
+            case 'course_subtitle':
+                $query->set('meta_key', 'course_subtitle');
                 $query->set('orderby', 'meta_value');
                 break;
                 
-            case 'scn_course_ce_enabled':
-                $query->set('meta_key', 'scn_course_ce_enabled');
+            case 'course_ce_enabled':
+                $query->set('meta_key', 'course_ce_enabled');
                 $query->set('orderby', 'meta_value');
                 break;
         }
@@ -152,7 +173,7 @@ class CoursePostType {
         
         // Only load on course edit pages
         if ($hook === 'post.php' || $hook === 'post-new.php') {
-            if ($post_type === 'scn_course') {
+            if ($post_type === 'course') {
                 ?>
                 <style>
                 /* Ensure proper sidebar layout for courses */
@@ -160,17 +181,17 @@ class CoursePostType {
                     margin-bottom: 20px;
                 }
                 
-                #scn_course_additional_info {
+                #course_additional_info {
                     margin-bottom: 20px;
                 }
                 
                 /* Style the course information metabox */
-                #scn_course_additional_info .form-table th {
+                #course_additional_info .form-table th {
                     width: 30%;
                     padding: 10px 10px 10px 0;
                 }
                 
-                #scn_course_additional_info .form-table td {
+                #course_additional_info .form-table td {
                     padding: 10px 0;
                 }
                 

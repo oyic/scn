@@ -23,9 +23,12 @@ class AuthModule {
     }
 
     public function enqueueScripts() {
-        if (get_query_var('scn_member_login') || 
-            get_query_var('scn_member_register') || 
-            get_query_var('scn_member_dashboard')) {
+        if (get_query_var('member_login') || 
+            get_query_var('member_register') || 
+            get_query_var('member_dashboard')) {
+            
+            // Enqueue Dashicons for frontend
+            wp_enqueue_style('dashicons');
             
             // Use minimal auth script to avoid JavaScript errors
             wp_enqueue_script(
@@ -62,11 +65,11 @@ class AuthModule {
     }
 
     public function customLoginRedirect($redirect_to, $requested_redirect_to, $user) {
-        // If user has a profile, redirect to dashboard
+        // If user has a member profile, redirect to member CPT URL
         if ($user && !is_wp_error($user)) {
-            $profile = $this->auth_service->getUserProfileById($user->ID);
-            if ($profile) {
-                return home_url('/member-dashboard/');
+            $member = $this->auth_service->getUserMember($user->ID);
+            if ($member) {
+                return get_permalink($member->ID);
             }
         }
         
@@ -82,11 +85,11 @@ class AuthModule {
         $role = get_role('subscriber');
         if ($role) {
             $capabilities = [
-                'read_scn_profiles',
-                'edit_scn_profiles',
-                'publish_scn_profiles',
-                'delete_scn_profiles',
-                'edit_published_scn_profiles',
+                'read_members',
+                'edit_members',
+                'publish_members',
+                'delete_members',
+                'edit_published_members',
                 'create_scn_sessions',
                 'edit_scn_sessions',
                 'publish_scn_sessions',
@@ -105,7 +108,7 @@ class AuthModule {
             if ($user) {
                 $profile_data = [
                     'post_title' => $user->display_name ?: $user->user_login,
-                    'post_type' => 'scn_profile',
+                    'post_type' => 'member',
                     'post_status' => 'publish',
                     'post_author' => $user_id,
                 ];
@@ -114,7 +117,7 @@ class AuthModule {
                 
                 if ($profile_id) {
                     update_post_meta($profile_id, 'scn_user_id', $user_id);
-                    update_post_meta($profile_id, 'scn_member_since', current_time('mysql'));
+                    update_post_meta($profile_id, 'member_since', current_time('mysql'));
                     
                     // Set basic profile info from user data
                     if ($user->first_name) {

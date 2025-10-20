@@ -4,6 +4,18 @@ namespace SCN\Membership\Admin;
 
 class AdminService {
     private $settings_service;
+    private static $instance = null;
+
+    public static function getInstance() {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    private function __construct() {
+        $this->register();
+    }
 
     public function register() {
         $this->settings_service = new SettingsService();
@@ -31,9 +43,21 @@ class AdminService {
             }
             $this->debugMetaboxRegistrations($screen);
         });
+        
+        // Auto-create WordPress user when member is saved (new or updated)
+        // Only creates if user doesn't already exist
+        // Using acf/save_post to ensure ACF fields are available
+        add_action('acf/save_post', [$this, 'createUserForMemberAfterAcf'], 20);
     }
 
     public function addAdminMenus() {
+        // Prevent duplicate menu registration
+        static $menus_registered = false;
+        if ($menus_registered) {
+            return;
+        }
+        $menus_registered = true;
+        
         // Don't interfere with ANY ACF admin pages
         $acf_post_types = ['acf-field-group', 'acf-post-type', 'acf-taxonomy', 'acf-ui-options-page'];
         
@@ -72,7 +96,7 @@ class AdminService {
             __('Members', 'scn-membership'),
             __('Members', 'scn-membership'),
             'edit_posts',
-            'edit.php?post_type=scn_profile'
+            'edit.php?post_type=member'
         );
         
         // Add any ACF-created member post types
@@ -81,81 +105,27 @@ class AdminService {
         // Add specific known member post types (add more as needed)
         $this->addSpecificMemberPostTypes();
         
-        // Force classic editor for member post types
+        // Force classic editor for member post types and course CPT
         add_filter('use_block_editor_for_post_type', [$this, 'disableBlockEditorForMemberTypes'], 10, 2);
         add_filter('use_block_editor_for_post', [$this, 'disableBlockEditorForMemberPosts'], 10, 2);
         add_action('admin_enqueue_scripts', [$this, 'ensureClassicEditorForMembers']);
 
+        // Add course CPT submenu (moved from WordPress admin)
         add_submenu_page(
             'scn-membership',
             __('Courses', 'scn-membership'),
             __('Courses', 'scn-membership'),
             'edit_posts',
-            'edit.php?post_type=scn_course'
+            'edit.php?post_type=course'
         );
 
+        // Add events submenu (moved from WordPress admin)
         add_submenu_page(
             'scn-membership',
             __('Events', 'scn-membership'),
             __('Events', 'scn-membership'),
             'edit_posts',
-            'edit.php?post_type=scn_event'
-        );
-
-        // Add Events admin tools submenus
-        add_submenu_page(
-            'scn-membership',
-            __('Event Aliases', 'scn-membership'),
-            __('Event Aliases', 'scn-membership'),
-            'manage_scn_events',
-            'scn-event-aliases',
-            [$this, 'aliasesPage']
-        );
-
-        add_submenu_page(
-            'scn-membership',
-            __('Event Field Locks', 'scn-membership'),
-            __('Event Field Locks', 'scn-membership'),
-            'lock_scn_events',
-            'scn-event-locks',
-            [$this, 'locksPage']
-        );
-
-        add_submenu_page(
-            'scn-membership',
-            __('Merge Events', 'scn-membership'),
-            __('Merge Events', 'scn-membership'),
-            'merge_scn_events',
-            'scn-event-merge',
-            [$this, 'mergePage']
-        );
-
-        // Also add these as submenus under the Events post type
-        add_submenu_page(
-            'edit.php?post_type=scn_event',
-            __('Event Aliases', 'scn-membership'),
-            __('Aliases', 'scn-membership'),
-            'manage_scn_events',
-            'scn-event-aliases',
-            [$this, 'aliasesPage']
-        );
-
-        add_submenu_page(
-            'edit.php?post_type=scn_event',
-            __('Event Field Locks', 'scn-membership'),
-            __('Field Locks', 'scn-membership'),
-            'lock_scn_events',
-            'scn-event-locks',
-            [$this, 'locksPage']
-        );
-
-        add_submenu_page(
-            'edit.php?post_type=scn_event',
-            __('Merge Events', 'scn-membership'),
-            __('Merge Events', 'scn-membership'),
-            'merge_scn_events',
-            'scn-event-merge',
-            [$this, 'mergePage']
+            'edit.php?post_type=event'
         );
 
         add_submenu_page(
@@ -163,8 +133,15 @@ class AdminService {
             __('Topics', 'scn-membership'),
             __('Topics', 'scn-membership'),
             'manage_categories',
-            'edit-tags.php?taxonomy=scn_topic&post_type=scn_course'
+            'edit-tags.php?taxonomy=scn_topic&post_type=course'
         );
+        
+        // Hide Events from main WordPress admin menu
+        add_action('admin_menu', [$this, 'hideEventsFromMainMenu'], 999);
+    }
+
+    public function hideEventsFromMainMenu() {
+        remove_menu_page('edit.php?post_type=event');
     }
 
     private function addACFMemberPostTypes() {
@@ -173,7 +150,7 @@ class AdminService {
         
         foreach ($post_types as $post_type_name => $post_type_obj) {
             // Skip our existing post types
-            if (in_array($post_type_name, ['scn_profile', 'scn_course', 'scn_event'])) {
+            if (in_array($post_type_name, ['member', 'course'])) {
                 continue;
             }
             
@@ -235,7 +212,7 @@ class AdminService {
         
         $known_member_post_types = [
             // 'member',           // Add your ACF-created member post type name here
-            // 'scn_member',       // Or any other member-related post types
+            // 'member',       // Or any other member-related post types
             // 'acf_member',       // etc.
         ];
         
@@ -261,17 +238,17 @@ class AdminService {
     }
     
     public function disableBlockEditorForMemberTypes($use_block_editor, $post_type) {
-        // Define member post types that should use classic editor
-        $member_post_types = [
-            'scn_profile',
+        // Define post types that should use classic editor
+        $classic_editor_post_types = [
             'member',
-            'scn_member',
+            'member',
             'acf_member',
             'members',
+            'course', // Add course CPT to classic editor
         ];
         
-        // Check if this is a member post type
-        if (in_array($post_type, $member_post_types)) {
+        // Check if this is a post type that should use classic editor
+        if (in_array($post_type, $classic_editor_post_types)) {
             return false; // Use classic editor
         }
         
@@ -310,7 +287,12 @@ class AdminService {
         
         $post_type = get_post_type($post);
         
-        // Use the same logic as the post type filter
+        // Force classic editor for course CPT
+        if ($post_type === 'course') {
+            return false;
+        }
+        
+        // Use the same logic as the post type filter for member types
         return !$this->isMemberPostType($post_type, get_post_type_object($post_type));
     }
     
@@ -328,12 +310,10 @@ class AdminService {
             $current_post_type = get_post_type($post);
         }
         
-        if ($current_post_type && $this->isMemberPostType($current_post_type, get_post_type_object($current_post_type))) {
-            // Force classic editor by removing block editor scripts
-            wp_dequeue_script('wp-block-editor');
-            wp_dequeue_script('wp-editor');
-            wp_dequeue_script('wp-edit-post');
-            
+        // Check if we're editing a member post type or course CPT
+        $should_use_classic = ($current_post_type && $this->isMemberPostType($current_post_type, get_post_type_object($current_post_type))) || $current_post_type === 'course';
+        
+        if ($should_use_classic) {
             // Ensure classic editor is loaded
             add_filter('user_can_richedit', '__return_true');
             
@@ -353,11 +333,11 @@ class AdminService {
         // Ensure capabilities are added first
         $this->addCapabilities();
         
-        // Register post types directly if they don't exist
-        if (!post_type_exists('scn_profile')) {
-            register_post_type('scn_profile', [
+        // Register member post type
+        if (!post_type_exists('member')) {
+            register_post_type('member', [
                 'labels' => [
-                    'name' => __('SCN Members', 'scn-membership'),
+                    'name' => __('Members', 'scn-membership'),
                     'singular_name' => __('Member', 'scn-membership'),
                     'add_new' => __('Add New Member', 'scn-membership'),
                     'add_new_item' => __('Add New Member', 'scn-membership'),
@@ -370,72 +350,24 @@ class AdminService {
                 ],
                 'public' => true,
                 'has_archive' => true,
-                'rewrite' => ['slug' => 'profiles'],
-                'supports' => ['title', 'editor', 'thumbnail'],
-                'capability_type' => 'scn_profile',
-                'map_meta_cap' => true,
-                'show_in_rest' => false, // Disable REST API to force classic editor
-                'rest_base' => 'profiles',
-                'rest_controller_class' => 'WP_REST_Posts_Controller',
-                'show_in_menu' => false, // Hide from main menu, show only under SCN Membership
-            ]);
-        }
-
-        if (!post_type_exists('scn_course')) {
-            register_post_type('scn_course', [
-                'labels' => [
-                    'name' => __('Courses', 'scn-membership'),
-                    'singular_name' => __('Course', 'scn-membership'),
-                    'add_new' => __('Add New Course', 'scn-membership'),
-                    'add_new_item' => __('Add New Course', 'scn-membership'),
-                    'edit_item' => __('Edit Course', 'scn-membership'),
-                    'new_item' => __('New Course', 'scn-membership'),
-                    'view_item' => __('View Course', 'scn-membership'),
-                    'search_items' => __('Search Courses', 'scn-membership'),
-                    'not_found' => __('No courses found', 'scn-membership'),
-                    'not_found_in_trash' => __('No courses found in trash', 'scn-membership'),
-                ],
-                'public' => true,
-                'has_archive' => true,
-                'rewrite' => ['slug' => 'courses'],
-                'supports' => ['title', 'editor', 'thumbnail', 'author'],
-                'capability_type' => 'scn_course',
+                'rewrite' => ['slug' => 'members'],
+                'supports' => ['title', 'thumbnail', 'author'],
+                'capability_type' => 'member',
                 'map_meta_cap' => true,
                 'show_in_rest' => true,
-                'rest_base' => 'courses',
+                'rest_base' => 'members',
                 'rest_controller_class' => 'WP_REST_Posts_Controller',
                 'show_in_menu' => false, // Hide from main menu, show only under SCN Membership
             ]);
         }
+        
+        // profile post type removed - using 'member' post type instead
 
-        if (!post_type_exists('scn_event')) {
-            register_post_type('scn_event', [
-                'labels' => [
-                    'name' => __('SCN Events', 'scn-membership'),
-                    'singular_name' => __('Event', 'scn-membership'),
-                    'add_new' => __('Add New Event', 'scn-membership'),
-                    'add_new_item' => __('Add New Event', 'scn-membership'),
-                    'edit_item' => __('Edit Event', 'scn-membership'),
-                    'new_item' => __('New Event', 'scn-membership'),
-                    'view_item' => __('View Event', 'scn-membership'),
-                    'search_items' => __('Search Events', 'scn-membership'),
-                    'not_found' => __('No events found', 'scn-membership'),
-                    'not_found_in_trash' => __('No events found in trash', 'scn-membership'),
-                ],
-                'public' => false,
-                'show_ui' => true,
-                'show_in_menu' => false, // Hide from main menu, show only under SCN Membership
-                'supports' => ['title', 'editor'],
-                'capability_type' => 'scn_event',
-                'map_meta_cap' => true,
-                'show_in_rest' => true,
-                'rest_base' => 'events',
-                'rest_controller_class' => 'WP_REST_Posts_Controller',
-            ]);
-        }
+        // Course post type is registered by CoursePostType.php - no need to duplicate here
+
 
         if (!taxonomy_exists('scn_topic')) {
-            register_taxonomy('scn_topic', 'scn_course', [
+            register_taxonomy('scn_topic', [], [ // Removed 'course' from object types
                 'labels' => [
                     'name' => __('Topics', 'scn-membership'),
                     'singular_name' => __('Topic', 'scn-membership'),
@@ -472,44 +404,30 @@ class AdminService {
         $admin_role = get_role('administrator');
         if ($admin_role) {
             $capabilities = [
-                // Profile capabilities
-                'edit_scn_profiles',
-                'edit_others_scn_profiles',
-                'publish_scn_profiles',
-                'read_private_scn_profiles',
-                'delete_scn_profiles',
-                'delete_private_scn_profiles',
-                'delete_published_scn_profiles',
-                'delete_others_scn_profiles',
-                'edit_private_scn_profiles',
-                'edit_published_scn_profiles',
+                // Member capabilities
+                'edit_members',
+                'edit_others_members',
+                'publish_members',
+                'read_private_members',
+                'delete_members',
+                'delete_private_members',
+                'delete_published_members',
+                'delete_others_members',
+                'edit_private_members',
+                'edit_published_members',
                 
                 // Course capabilities
-                'edit_scn_courses',
-                'edit_others_scn_courses',
-                'publish_scn_courses',
-                'read_private_scn_courses',
-                'delete_scn_courses',
-                'delete_private_scn_courses',
-                'delete_published_scn_courses',
-                'delete_others_scn_courses',
-                'edit_private_scn_courses',
-                'edit_published_scn_courses',
+                'edit_courses',
+                'edit_others_courses',
+                'publish_courses',
+                'read_private_courses',
+                'delete_courses',
+                'delete_private_courses',
+                'delete_published_courses',
+                'delete_others_courses',
+                'edit_private_courses',
+                'edit_published_courses',
                 
-                // Event capabilities
-                'edit_scn_events',
-                'edit_others_scn_events',
-                'publish_scn_events',
-                'read_private_scn_events',
-                'delete_scn_events',
-                'delete_private_scn_events',
-                'delete_published_scn_events',
-                'delete_others_scn_events',
-                'edit_private_scn_events',
-                'edit_published_scn_events',
-                'manage_scn_events',
-                'merge_scn_events',
-                'lock_scn_events',
             ];
 
             foreach ($capabilities as $cap) {
@@ -517,36 +435,34 @@ class AdminService {
             }
         }
 
+        // Add capabilities for subscribers (members)
+        $subscriber_role = get_role('subscriber');
+        if ($subscriber_role) {
+            // Ensure subscribers can edit posts
+            $subscriber_role->add_cap('edit_posts');
+        }
+
         // Add capabilities for editors
         $editor_role = get_role('editor');
         if ($editor_role) {
             $editor_capabilities = [
-                'edit_scn_profiles',
-                'edit_others_scn_profiles',
-                'publish_scn_profiles',
-                'read_private_scn_profiles',
-                'delete_scn_profiles',
-                'delete_others_scn_profiles',
-                'delete_published_scn_profiles',
-                'edit_published_scn_profiles',
+                'edit_members',
+                'edit_others_members',
+                'publish_members',
+                'read_private_members',
+                'delete_members',
+                'delete_others_members',
+                'delete_published_members',
+                'edit_published_members',
                 
-                'edit_scn_courses',
-                'edit_others_scn_courses',
-                'publish_scn_courses',
-                'read_private_scn_courses',
-                'delete_scn_courses',
-                'delete_others_scn_courses',
-                'delete_published_scn_courses',
-                'edit_published_scn_courses',
-                
-                'edit_scn_events',
-                'edit_others_scn_events',
-                'publish_scn_events',
-                'read_private_scn_events',
-                'delete_scn_events',
-                'delete_others_scn_events',
-                'delete_published_scn_events',
-                'edit_published_scn_events',
+                'edit_courses',
+                'edit_others_courses',
+                'publish_courses',
+                'read_private_courses',
+                'delete_courses',
+                'delete_others_courses',
+                'delete_published_courses',
+                'edit_published_courses',
             ];
 
             foreach ($editor_capabilities as $cap) {
@@ -558,20 +474,15 @@ class AdminService {
         $author_role = get_role('author');
         if ($author_role) {
             $author_capabilities = [
-                'edit_scn_profiles',
-                'publish_scn_profiles',
-                'delete_scn_profiles',
-                'edit_published_scn_profiles',
+                'edit_members',
+                'publish_members',
+                'delete_members',
+                'edit_published_members',
                 
-                'edit_scn_courses',
-                'publish_scn_courses',
-                'delete_scn_courses',
-                'edit_published_scn_courses',
-                
-                'edit_scn_events',
-                'publish_scn_events',
-                'delete_scn_events',
-                'edit_published_scn_events',
+                'edit_courses',
+                'publish_courses',
+                'delete_courses',
+                'edit_published_courses',
             ];
 
             foreach ($author_capabilities as $cap) {
@@ -597,7 +508,7 @@ class AdminService {
             return;
         }
 
-        $cpt_types = ['scn_profile', 'scn_event', 'scn_course'];
+        $cpt_types = ['member', 'course'];
         
         if (!in_array($post->post_type, $cpt_types)) {
             return;
@@ -647,7 +558,7 @@ class AdminService {
             return;
         }
         
-        if (!$screen || !in_array($screen->post_type, ['scn_profile', 'scn_event', 'scn_course'], true)) {
+        if (!$screen || !in_array($screen->post_type, ['member', 'course'], true)) {
             return;
         }
 
@@ -723,7 +634,7 @@ class AdminService {
      * Logs all registered metaboxes for our CPTs to help verify no sidebar UI remains
      */
     public function debugMetaboxRegistrations($screen) {
-        if (!$screen || !in_array($screen->post_type, ['scn_profile', 'scn_event', 'scn_course'], true)) {
+        if (!$screen || !in_array($screen->post_type, ['member', 'course'], true)) {
             return;
         }
         
@@ -749,7 +660,7 @@ class AdminService {
         global $post_type;
         
         // Only enqueue scripts on our CPT edit screens
-        if (!in_array($post_type, ['scn_profile', 'scn_course', 'scn_event'])) {
+        if (!in_array($post_type, ['member', 'course'])) {
             return;
         }
         
@@ -765,14 +676,11 @@ class AdminService {
         
         // Enqueue scripts based on post type
         switch ($post_type) {
-            case 'scn_profile':
+            case 'member':
                 $this->enqueueProfileScripts();
                 break;
-            case 'scn_course':
+            case 'course':
                 $this->enqueueCourseScripts();
-                break;
-            case 'scn_event':
-                $this->enqueueEventScripts();
                 break;
         }
     }
@@ -795,7 +703,7 @@ class AdminService {
         
         wp_localize_script('scn-profiles-admin', 'scnProfilesAdmin', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('scn_profiles_admin'),
+            'nonce' => wp_create_nonce('members_admin'),
             'strings' => [
                 'selectImages' => __('Select Images', 'scn-membership'),
                 'selectFiles' => __('Select Files', 'scn-membership'),
@@ -839,27 +747,6 @@ class AdminService {
         ]);
     }
     
-    private function enqueueEventScripts() {
-        wp_enqueue_script(
-            'scn-events-admin',
-            SCN_MEMBERSHIP_URL . 'assets/js/events-admin.js',
-            ['jquery'],
-            SCN_MEMBERSHIP_VERSION,
-            true
-        );
-        
-        wp_enqueue_style(
-            'scn-events-admin',
-            SCN_MEMBERSHIP_URL . 'assets/css/events-admin.css',
-            [],
-            SCN_MEMBERSHIP_VERSION
-        );
-        
-        wp_localize_script('scn-events-admin', 'scnEvents', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('scn_events_nonce'),
-        ]);
-    }
 
     public function registerRestRoutes() {
         // Ensure post types are registered for REST API
@@ -898,7 +785,7 @@ class AdminService {
                     <div class="scn-admin-card">
                         <h2><?php _e('Profiles', 'scn-membership'); ?></h2>
                         <p><?php _e('Manage member profiles, photos, videos, and press kits.', 'scn-membership'); ?></p>
-                        <a href="<?php echo admin_url('edit.php?post_type=scn_profile'); ?>" class="button button-primary">
+                        <a href="<?php echo admin_url('edit.php?post_type=member'); ?>" class="button button-primary">
                             <?php _e('View Profiles', 'scn-membership'); ?>
                         </a>
                     </div>
@@ -906,23 +793,45 @@ class AdminService {
                     <div class="scn-admin-card">
                         <h2><?php _e('Courses', 'scn-membership'); ?></h2>
                         <p><?php _e('Manage courses, CE hours, and learning outcomes.', 'scn-membership'); ?></p>
-                        <a href="<?php echo admin_url('edit.php?post_type=scn_course'); ?>" class="button button-primary">
-                            <?php _e('View Courses', 'scn-membership'); ?>
-                        </a>
+                        <div class="scn-admin-actions">
+                            <a href="<?php echo admin_url('edit.php?post_type=course'); ?>" class="button button-primary">
+                                <?php _e('View All Courses', 'scn-membership'); ?>
+                            </a>
+                            <a href="<?php echo admin_url('post-new.php?post_type=course'); ?>" class="button">
+                                <?php _e('Add New Course', 'scn-membership'); ?>
+                            </a>
+                        </div>
+                        
+                        <?php
+                        // Show recent courses
+                        $recent_courses = get_posts([
+                            'post_type' => 'course',
+                            'posts_per_page' => 5,
+                            'post_status' => 'publish'
+                        ]);
+                        
+                        if (!empty($recent_courses)): ?>
+                            <div class="scn-admin-recent">
+                                <h4><?php _e('Recent Courses:', 'scn-membership'); ?></h4>
+                                <ul>
+                                    <?php foreach ($recent_courses as $course): ?>
+                                        <li>
+                                            <a href="<?php echo get_edit_post_link($course->ID); ?>">
+                                                <?php echo esc_html($course->post_title); ?>
+                                            </a>
+                                            <span class="post-date"><?php echo get_the_date('M j, Y', $course->ID); ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     
-                    <div class="scn-admin-card">
-                        <h2><?php _e('Events', 'scn-membership'); ?></h2>
-                        <p><?php _e('Manage speaking engagements and events.', 'scn-membership'); ?></p>
-                        <a href="<?php echo admin_url('edit.php?post_type=scn_event'); ?>" class="button button-primary">
-                            <?php _e('View Events', 'scn-membership'); ?>
-                        </a>
-                    </div>
                     
                     <div class="scn-admin-card">
                         <h2><?php _e('Topics', 'scn-membership'); ?></h2>
                         <p><?php _e('Manage topic categories for courses.', 'scn-membership'); ?></p>
-                        <a href="<?php echo admin_url('edit-tags.php?taxonomy=scn_topic&post_type=scn_course'); ?>" class="button button-primary">
+                        <a href="<?php echo admin_url('edit-tags.php?taxonomy=scn_topic&post_type=course'); ?>" class="button button-primary">
                             <?php _e('Manage Topics', 'scn-membership'); ?>
                         </a>
                     </div>
@@ -932,21 +841,18 @@ class AdminService {
                     <h3><?php _e('Quick Stats', 'scn-membership'); ?></h3>
                     <p>
                         <?php
-                        $profiles_count = wp_count_posts('scn_profile');
-                        $courses_count = wp_count_posts('scn_course');
-                        $events_count = wp_count_posts('scn_event');
+                        $profiles_count = wp_count_posts('member');
+                        $courses_count = wp_count_posts('course');
                         $topics_count = wp_count_terms('scn_topic');
                         
                         $profiles_published = isset($profiles_count->publish) ? $profiles_count->publish : 0;
                         $courses_published = isset($courses_count->publish) ? $courses_count->publish : 0;
-                        $events_published = isset($events_count->publish) ? $events_count->publish : 0;
                         $topics_count = is_wp_error($topics_count) ? 0 : $topics_count;
                         
                         printf(
-                            __('%d Profiles, %d Courses, %d Events, %d Topics', 'scn-membership'),
+                            __('%d Profiles, %d Courses, %d Topics', 'scn-membership'),
                             $profiles_published,
                             $courses_published,
-                            $events_published,
                             $topics_count
                         );
                         ?>
@@ -980,6 +886,47 @@ class AdminService {
             color: #666;
             margin-bottom: 15px;
         }
+        .scn-admin-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .scn-admin-recent {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .scn-admin-recent h4 {
+            margin: 0 0 10px 0;
+            color: #23282d;
+            font-size: 14px;
+        }
+        .scn-admin-recent ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .scn-admin-recent li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px solid #f0f0f1;
+        }
+        .scn-admin-recent li:last-child {
+            border-bottom: none;
+        }
+        .scn-admin-recent li a {
+            color: #0073aa;
+            text-decoration: none;
+        }
+        .scn-admin-recent li a:hover {
+            color: #005177;
+        }
+        .scn-admin-recent .post-date {
+            color: #666;
+            font-size: 12px;
+        }
         .scn-admin-info {
             background: #f1f1f1;
             padding: 15px;
@@ -998,12 +945,12 @@ class AdminService {
         }
 
         // Handle form submission
-        if (isset($_POST['submit']) && wp_verify_nonce($_POST['_wpnonce'], 'scn_membership_settings-options')) {
+        if (isset($_POST['submit']) && wp_verify_nonce($_POST['_wpnonce'], 'membership_settings-options')) {
             $this->handleSettingsSave();
         }
 
         // Handle reset to defaults
-        if (isset($_POST['reset']) && wp_verify_nonce($_POST['_wpnonce'], 'scn_membership_settings-options')) {
+        if (isset($_POST['reset']) && wp_verify_nonce($_POST['_wpnonce'], 'membership_settings-options')) {
             $this->handleSettingsReset();
         }
 
@@ -1012,12 +959,12 @@ class AdminService {
 
     private function handleSettingsSave() {
         $settings = $this->settings_service->getSettings();
-        $updated_settings = $this->settings_service->sanitizeSettings($_POST['scn_membership_options'] ?? []);
+        $updated_settings = $this->settings_service->sanitizeSettings($_POST['membership_options'] ?? []);
         
-        update_option('scn_membership_options', $updated_settings);
+        update_option('membership_options', $updated_settings);
         
         add_settings_error(
-            'scn_membership_settings',
+            'membership_settings',
             'settings_saved',
             __('Settings saved successfully!', 'scn-membership'),
             'updated'
@@ -1026,10 +973,10 @@ class AdminService {
 
     private function handleSettingsReset() {
         $default_settings = $this->settings_service->getDefaultSettings();
-        update_option('scn_membership_options', $default_settings);
+        update_option('membership_options', $default_settings);
         
         add_settings_error(
-            'scn_membership_settings',
+            'membership_settings',
             'settings_reset',
             __('Settings reset to defaults!', 'scn-membership'),
             'updated'
@@ -1041,7 +988,7 @@ class AdminService {
         <div class="wrap scn-settings-page">
             <h1><?php _e('SCN Membership Settings', 'scn-membership'); ?></h1>
             
-            <?php settings_errors('scn_membership_settings'); ?>
+            <?php settings_errors('membership_settings'); ?>
             
             <div class="scn-settings-header">
                 <div class="scn-settings-actions">
@@ -1061,7 +1008,7 @@ class AdminService {
             </div>
 
             <form method="post" action="" id="scn-settings-form">
-                <?php wp_nonce_field('scn_membership_settings-options'); ?>
+                <?php wp_nonce_field('membership_settings-options'); ?>
                 
                 <div class="scn-settings-tabs">
                     <nav class="nav-tab-wrapper">
@@ -1159,21 +1106,21 @@ class AdminService {
             <tr>
                 <th scope="row"><?php _e('Site Name', 'scn-membership'); ?></th>
                 <td>
-                    <input type="text" name="scn_membership_options[site_name]" value="<?php echo esc_attr($settings['site_name']); ?>" class="regular-text" placeholder="<?php esc_attr_e('SCN Membership', 'scn-membership'); ?>" />
+                    <input type="text" name="membership_options[site_name]" value="<?php echo esc_attr($settings['site_name']); ?>" class="regular-text" placeholder="<?php esc_attr_e('SCN Membership', 'scn-membership'); ?>" />
                     <p class="description"><?php _e('The name of your SCN membership site.', 'scn-membership'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Site Description', 'scn-membership'); ?></th>
                 <td>
-                    <textarea name="scn_membership_options[site_description]" rows="3" class="large-text"><?php echo esc_textarea($settings['site_description']); ?></textarea>
+                    <textarea name="membership_options[site_description]" rows="3" class="large-text"><?php echo esc_textarea($settings['site_description']); ?></textarea>
                     <p class="description"><?php _e('A brief description of your SCN membership site.', 'scn-membership'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Contact Email', 'scn-membership'); ?></th>
                 <td>
-                    <input type="email" name="scn_membership_options[contact_email]" value="<?php echo esc_attr($settings['contact_email']); ?>" class="regular-text" />
+                    <input type="email" name="membership_options[contact_email]" value="<?php echo esc_attr($settings['contact_email']); ?>" class="regular-text" />
                     <p class="description"><?php _e('Email address for general inquiries.', 'scn-membership'); ?></p>
                 </td>
             </tr>
@@ -1181,7 +1128,7 @@ class AdminService {
                 <th scope="row"><?php _e('Enable Member Registration', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[enable_registration]" value="1" <?php checked($settings['enable_registration']); ?> />
+                        <input type="checkbox" name="membership_options[enable_registration]" value="1" <?php checked($settings['enable_registration']); ?> />
                         <?php _e('Allow new members to register and create profiles.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1200,7 +1147,7 @@ class AdminService {
             <tr>
                 <th scope="row"><?php _e('Maximum Image Size (MB)', 'scn-membership'); ?></th>
                 <td>
-                    <input type="number" name="scn_membership_options[max_image_size]" value="<?php echo esc_attr($settings['max_image_size']); ?>" min="1" max="50" step="1" class="small-text" />
+                    <input type="number" name="membership_options[max_image_size]" value="<?php echo esc_attr($settings['max_image_size']); ?>" min="1" max="50" step="1" class="small-text" />
                     <p class="description"><?php _e('Maximum file size for image uploads.', 'scn-membership'); ?></p>
                 </td>
             </tr>
@@ -1219,7 +1166,7 @@ class AdminService {
                         $selected_types = $settings['allowed_image_types'];
                         foreach ($allowed_types as $type => $label) {
                             printf(
-                                '<label><input type="checkbox" name="scn_membership_options[allowed_image_types][]" value="%s" %s /> %s</label><br>',
+                                '<label><input type="checkbox" name="membership_options[allowed_image_types][]" value="%s" %s /> %s</label><br>',
                                 esc_attr($type),
                                 checked(in_array($type, $selected_types), true, false),
                                 esc_html($label)
@@ -1234,7 +1181,7 @@ class AdminService {
                 <th scope="row"><?php _e('Auto-optimize Images', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[auto_optimize_images]" value="1" <?php checked($settings['auto_optimize_images']); ?> />
+                        <input type="checkbox" name="membership_options[auto_optimize_images]" value="1" <?php checked($settings['auto_optimize_images']); ?> />
                         <?php _e('Automatically optimize uploaded images for web.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1243,7 +1190,7 @@ class AdminService {
                 <th scope="row"><?php _e('Generate WebP Versions', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[generate_webp]" value="1" <?php checked($settings['generate_webp']); ?> />
+                        <input type="checkbox" name="membership_options[generate_webp]" value="1" <?php checked($settings['generate_webp']); ?> />
                         <?php _e('Generate WebP versions of uploaded images for better performance.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1263,7 +1210,7 @@ class AdminService {
                 <th scope="row"><?php _e('Force HTTPS', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[force_https]" value="1" <?php checked($settings['force_https']); ?> />
+                        <input type="checkbox" name="membership_options[force_https]" value="1" <?php checked($settings['force_https']); ?> />
                         <?php _e('Automatically convert HTTP URLs to HTTPS.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1272,7 +1219,7 @@ class AdminService {
                 <th scope="row"><?php _e('Validate URLs', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[validate_urls]" value="1" <?php checked($settings['validate_urls']); ?> />
+                        <input type="checkbox" name="membership_options[validate_urls]" value="1" <?php checked($settings['validate_urls']); ?> />
                         <?php _e('Validate URLs before saving to ensure they are accessible.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1280,7 +1227,7 @@ class AdminService {
             <tr>
                 <th scope="row"><?php _e('Allowed Domains', 'scn-membership'); ?></th>
                 <td>
-                    <textarea name="scn_membership_options[allowed_domains]" rows="3" class="large-text" placeholder="example.com, another-site.com"><?php echo esc_textarea($settings['allowed_domains']); ?></textarea>
+                    <textarea name="membership_options[allowed_domains]" rows="3" class="large-text" placeholder="example.com, another-site.com"><?php echo esc_textarea($settings['allowed_domains']); ?></textarea>
                     <p class="description"><?php _e('Comma-separated list of allowed domains for external links.', 'scn-membership'); ?></p>
                 </td>
             </tr>
@@ -1288,7 +1235,7 @@ class AdminService {
                 <th scope="row"><?php _e('Open External Links in New Tab', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[open_external_new_tab]" value="1" <?php checked($settings['open_external_new_tab']); ?> />
+                        <input type="checkbox" name="membership_options[open_external_new_tab]" value="1" <?php checked($settings['open_external_new_tab']); ?> />
                         <?php _e('Automatically open external links in a new tab.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1308,7 +1255,7 @@ class AdminService {
                 <th scope="row"><?php _e('Auto-approve Sessions', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[auto_approve_sessions]" value="1" <?php checked($settings['auto_approve_sessions']); ?> />
+                        <input type="checkbox" name="membership_options[auto_approve_sessions]" value="1" <?php checked($settings['auto_approve_sessions']); ?> />
                         <?php _e('Automatically approve sessions for current and future events.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1316,14 +1263,14 @@ class AdminService {
             <tr>
                 <th scope="row"><?php _e('Session Approval Email', 'scn-membership'); ?></th>
                 <td>
-                    <input type="email" name="scn_membership_options[session_approval_email]" value="<?php echo esc_attr($settings['session_approval_email']); ?>" class="regular-text" />
+                    <input type="email" name="membership_options[session_approval_email]" value="<?php echo esc_attr($settings['session_approval_email']); ?>" class="regular-text" />
                     <p class="description"><?php _e('Email address to receive session approval notifications.', 'scn-membership'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Widget Cache Duration (minutes)', 'scn-membership'); ?></th>
                 <td>
-                    <input type="number" name="scn_membership_options[widget_cache_duration]" value="<?php echo esc_attr($settings['widget_cache_duration']); ?>" min="5" max="1440" step="5" class="small-text" />
+                    <input type="number" name="membership_options[widget_cache_duration]" value="<?php echo esc_attr($settings['widget_cache_duration']); ?>" min="5" max="1440" step="5" class="small-text" />
                     <p class="description"><?php _e('How long to cache widget data before refreshing.', 'scn-membership'); ?></p>
                 </td>
             </tr>
@@ -1341,14 +1288,14 @@ class AdminService {
             <tr>
                 <th scope="row"><?php _e('Default Widget Title', 'scn-membership'); ?></th>
                 <td>
-                    <input type="text" name="scn_membership_options[default_widget_title]" value="<?php echo esc_attr($settings['default_widget_title']); ?>" class="regular-text" placeholder="<?php esc_attr_e('Where Our Members Are Speaking', 'scn-membership'); ?>" />
+                    <input type="text" name="membership_options[default_widget_title]" value="<?php echo esc_attr($settings['default_widget_title']); ?>" class="regular-text" placeholder="<?php esc_attr_e('Where Our Members Are Speaking', 'scn-membership'); ?>" />
                     <p class="description"><?php _e('Default title for the "Where Our Members Are Speaking" widget.', 'scn-membership'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Default Widget Limit', 'scn-membership'); ?></th>
                 <td>
-                    <input type="number" name="scn_membership_options[default_widget_limit]" value="<?php echo esc_attr($settings['default_widget_limit']); ?>" min="1" max="20" step="1" class="small-text" />
+                    <input type="number" name="membership_options[default_widget_limit]" value="<?php echo esc_attr($settings['default_widget_limit']); ?>" min="1" max="20" step="1" class="small-text" />
                     <p class="description"><?php _e('Default number of sessions to show in the widget.', 'scn-membership'); ?></p>
                 </td>
             </tr>
@@ -1356,7 +1303,7 @@ class AdminService {
                 <th scope="row"><?php _e('Show Event Dates by Default', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[widget_show_dates]" value="1" <?php checked($settings['widget_show_dates']); ?> />
+                        <input type="checkbox" name="membership_options[widget_show_dates]" value="1" <?php checked($settings['widget_show_dates']); ?> />
                         <?php _e('Show event dates in the widget by default.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1365,7 +1312,7 @@ class AdminService {
                 <th scope="row"><?php _e('Show Event Names by Default', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[widget_show_events]" value="1" <?php checked($settings['widget_show_events']); ?> />
+                        <input type="checkbox" name="membership_options[widget_show_events]" value="1" <?php checked($settings['widget_show_events']); ?> />
                         <?php _e('Show event names in the widget by default.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1385,7 +1332,7 @@ class AdminService {
                 <th scope="row"><?php _e('Debug Mode', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[debug_mode]" value="1" <?php checked($settings['debug_mode']); ?> />
+                        <input type="checkbox" name="membership_options[debug_mode]" value="1" <?php checked($settings['debug_mode']); ?> />
                         <?php _e('Enable debug mode for troubleshooting.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1394,7 +1341,7 @@ class AdminService {
                 <th scope="row"><?php _e('Log Errors', 'scn-membership'); ?></th>
                 <td>
                     <label>
-                        <input type="checkbox" name="scn_membership_options[log_errors]" value="1" <?php checked($settings['log_errors']); ?> />
+                        <input type="checkbox" name="membership_options[log_errors]" value="1" <?php checked($settings['log_errors']); ?> />
                         <?php _e('Log errors to the WordPress error log.', 'scn-membership'); ?>
                     </label>
                 </td>
@@ -1402,14 +1349,14 @@ class AdminService {
             <tr>
                 <th scope="row"><?php _e('Custom CSS', 'scn-membership'); ?></th>
                 <td>
-                    <textarea name="scn_membership_options[custom_css]" rows="10" class="large-text code"><?php echo esc_textarea($settings['custom_css']); ?></textarea>
+                    <textarea name="membership_options[custom_css]" rows="10" class="large-text code"><?php echo esc_textarea($settings['custom_css']); ?></textarea>
                     <p class="description"><?php _e('Custom CSS to be added to the frontend.', 'scn-membership'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Custom JavaScript', 'scn-membership'); ?></th>
                 <td>
-                    <textarea name="scn_membership_options[custom_js]" rows="10" class="large-text code"><?php echo esc_textarea($settings['custom_js']); ?></textarea>
+                    <textarea name="membership_options[custom_js]" rows="10" class="large-text code"><?php echo esc_textarea($settings['custom_js']); ?></textarea>
                     <p class="description"><?php _e('Custom JavaScript to be added to the frontend.', 'scn-membership'); ?></p>
                 </td>
             </tr>
@@ -1417,34 +1364,199 @@ class AdminService {
         <?php
     }
 
-    public function aliasesPage() {
-        if (!current_user_can('manage_scn_events')) {
-            wp_die(__('Insufficient permissions.', 'scn-membership'));
-        }
 
-        // Include the aliases page from the Events module
-        $aliases_page = new \SCN\Membership\Modules\Events\Admin\AliasesPage();
-        $aliases_page->renderPage();
+    /**
+     * Create WordPress user after ACF saves member post
+     * Only creates user if one doesn't already exist for this member
+     */
+    public function createUserForMemberAfterAcf($post_id) {
+        // Skip autosaves
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+            return;
+        }
+        
+        // Check if this is a revision
+        if (wp_is_post_revision($post_id)) {
+            return;
+        }
+        
+        // Only process member posts
+        if (get_post_type($post_id) !== 'member') {
+            return;
+        }
+        
+        $post = get_post($post_id);
+        if (!$post) {
+            return;
+        }
+        
+        // Debug logging
+        error_log("SCN Membership: createUserForMemberAfterAcf called for post ID: {$post_id}");
+        
+        // Check if user already exists for this member - if yes, skip creation
+        $existing_user_id = get_post_meta($post_id, 'scn_user_id', true);
+        if ($existing_user_id) {
+            error_log("SCN Membership: Skipping - user already exists: {$existing_user_id}");
+            return; // User already exists, no need to create
+        }
+        
+        // Get basic info from ACF fields (now guaranteed to be saved)
+        $basic_info = get_field('basic_info', $post_id);
+        error_log("SCN Membership: ACF basic_info data: " . print_r($basic_info, true));
+        
+        if (!$basic_info) {
+            error_log("SCN Membership: No basic_info ACF field found");
+            return; // No basic info available
+        }
+        
+        $first_name = $basic_info['first_name'] ?? '';
+        $last_name = $basic_info['last_name'] ?? '';
+        
+        // Email is a separate field, not inside basic_info
+        $email = get_field('email', $post_id);
+        if (empty($email)) {
+            // Try alternate field names
+            $email = get_field('member_email', $post_id);
+        }
+        
+        error_log("SCN Membership: Extracted data - First: '{$first_name}', Last: '{$last_name}', Email: '{$email}'");
+        
+        if (empty($first_name) || empty($last_name) || empty($email)) {
+            error_log("SCN Membership: Missing required fields - First: '{$first_name}', Last: '{$last_name}', Email: '{$email}'");
+            return; // Need first name, last name, and email
+        }
+        
+        // Check if email is valid
+        if (!is_email($email)) {
+            error_log("SCN Membership: Invalid email '{$email}' for member '{$post->post_title}'");
+            return;
+        }
+        
+        // Check if user with this email already exists
+        if (email_exists($email)) {
+            error_log("SCN Membership: User with email '{$email}' already exists for member '{$post->post_title}' - skipping user creation");
+            return;
+        }
+        
+        error_log("SCN Membership: Proceeding with user creation for member '{$post->post_title}'");
+        
+        // Generate username from first and last name
+        $username = strtolower($first_name . '.' . $last_name);
+        $username = sanitize_user($username);
+        
+        // Make sure username is unique
+        $original_username = $username;
+        $counter = 1;
+        while (username_exists($username)) {
+            $username = $original_username . $counter;
+            $counter++;
+        }
+        
+        // Generate random password
+        $password = wp_generate_password(12, false);
+        
+        // Create WordPress user
+        error_log("SCN Membership: Creating user with username: '{$username}', email: '{$email}'");
+        $user_id = wp_create_user($username, $password, $email);
+        
+        if (!is_wp_error($user_id)) {
+            error_log("SCN Membership: User created successfully with ID: {$user_id}");
+            
+            // Update user meta
+            update_user_meta($user_id, 'first_name', $first_name);
+            update_user_meta($user_id, 'last_name', $last_name);
+            
+            // Associate user with member post
+            update_post_meta($post_id, 'scn_user_id', $user_id);
+            
+            // Set user role to subscriber by default
+            $user = new \WP_User($user_id);
+            $user->set_role('subscriber');
+            
+            // Send password via email
+            $this->sendPasswordEmail($user_id, $email, $first_name, $username, $password);
+            
+            // Log the creation
+            error_log("SCN Membership: Created user ID {$user_id} for member '{$post->post_title}' (ID: {$post_id})");
+        } else {
+            error_log("SCN Membership: Failed to create user for member '{$post->post_title}': " . $user_id->get_error_message());
+        }
     }
 
-    public function locksPage() {
-        if (!current_user_can('lock_scn_events')) {
-            wp_die(__('Insufficient permissions.', 'scn-membership'));
-        }
+    /**
+     * Send password email to new member
+     */
+    private function sendPasswordEmail($user_id, $email, $first_name, $username, $password) {
+        $subject = __('Your SCN Membership Account Details', 'scn-membership');
+        
+        $login_url = home_url('/member-login/');
+        
+        $message = sprintf(
+            __('Hello %s,
 
-        // Include the locks page from the Events module
-        $locks_page = new \SCN\Membership\Modules\Events\Admin\LocksPage();
-        $locks_page->renderPage();
+Welcome to SCN! Your membership account has been created successfully.
+
+Your account details:
+Username: %s
+Password: %s
+Login URL: %s
+
+Please keep this information secure and consider changing your password after your first login.
+
+If you have any questions, please contact us.
+
+Best regards,
+The SCN Team', 'scn-membership'),
+            $first_name,
+            $username,
+            $password,
+            $login_url
+        );
+        
+        $headers = [
+            'Content-Type: text/plain; charset=UTF-8',
+            'From: SCN <noreply@' . parse_url(home_url(), PHP_URL_HOST) . '>'
+        ];
+        
+        // Try wp_mail first
+        $result = wp_mail($email, $subject, $message, $headers);
+        
+        // If wp_mail fails, try alternative methods
+        if (!$result) {
+            // Log the failure
+            error_log('SCN Email: Failed to send password email to user ' . $user_id);
+            
+            // Try direct mail function as fallback
+            $result = $this->sendEmailFallback($email, $subject, $message);
+        }
+        
+        if ($result) {
+            error_log("SCN Membership: Password email sent to {$email} for user ID {$user_id}");
+        } else {
+            error_log("SCN Membership: Failed to send password email to {$email} for user ID {$user_id}");
+        }
+        
+        return $result;
     }
 
-    public function mergePage() {
-        if (!current_user_can('merge_scn_events')) {
-            wp_die(__('Insufficient permissions.', 'scn-membership'));
+    /**
+     * Fallback email sending method
+     */
+    private function sendEmailFallback($email, $subject, $message) {
+        // For development, you can log the email instead of sending
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log("SCN Email Fallback - To: $email, Subject: $subject");
+            error_log("SCN Email Content: $message");
+            
+            // In development, consider this a success
+            return true;
         }
-
-        // Include the merge page from the Events module
-        $merge_page = new \SCN\Membership\Modules\Events\Admin\MergePage();
-        $merge_page->renderPage();
+        
+        // Try using PHP's mail function directly
+        $headers = "From: SCN <noreply@" . parse_url(home_url(), PHP_URL_HOST) . ">\r\n";
+        $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+        
+        return mail($email, $subject, $message, $headers);
     }
 }
 

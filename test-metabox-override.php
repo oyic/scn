@@ -19,7 +19,7 @@ if (!is_user_logged_in() || !current_user_can('manage_options')) {
 }
 
 // Get current screen context
-$post_types = ['scn_course', 'scn_event', 'scn_profile'];
+$post_types = ['course', 'event', 'profile'];
 global $wp_meta_boxes;
 
 echo '<h1>SCN Membership - Metabox Override Test</h1>';

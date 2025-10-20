@@ -9,7 +9,7 @@
 // WP-CLI Commands to create test user:
 /*
 wp user create testmember test@scn-membership.com --role=subscriber --first_name="Test" --last_name="Member" --user_pass="TestMember123!"
-wp post create --post_type=scn_profile --post_title="Test Member" --post_status=publish --post_author=2 --meta_input='{"scn_user_id":2,"scn_first_name":"Test","scn_last_name":"Member","scn_bio":"This is a test member profile for SCN Membership authentication testing.","scn_location":"Test City, TC","scn_credentials":"Test Member, SCN","scn_member_since":"2024-01-01 00:00:00"}'
+wp post create --post_type=profile --post_title="Test Member" --post_status=publish --post_author=2 --meta_input='{"scn_user_id":2,"scn_first_name":"Test","scn_last_name":"Member","scn_bio":"This is a test member profile for SCN Membership authentication testing.","scn_location":"Test City, TC","scn_credentials":"Test Member, SCN","member_since":"2024-01-01 00:00:00"}'
 */
 
 // Alternative: Add this code to functions.php temporarily to create the user
@@ -33,7 +33,7 @@ function create_scn_test_user() {
     // Create profile
     $profile_id = wp_insert_post([
         'post_title' => 'Test Member',
-        'post_type' => 'scn_profile',
+        'post_type' => 'profile',
         'post_status' => 'publish',
         'post_author' => $user_id,
         'meta_input' => [
@@ -43,7 +43,7 @@ function create_scn_test_user() {
             'scn_bio' => 'This is a test member profile for SCN Membership authentication testing.',
             'scn_location' => 'Test City, TC',
             'scn_credentials' => 'Test Member, SCN',
-            'scn_member_since' => current_time('mysql')
+            'member_since' => current_time('mysql')
         ]
     ]);
     

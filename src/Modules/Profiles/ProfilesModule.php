@@ -39,7 +39,7 @@ class ProfilesModule {
     }
 
     public function registerTaxonomies() {
-        \register_taxonomy('scn_topic', 'scn_course', [
+        \register_taxonomy('scn_topic', [], [ // Removed 'course' from object types
             'labels' => [
                 'name' => __('Course Topics', 'scn-membership'),
                 'singular_name' => __('Course Topic', 'scn-membership'),
@@ -68,25 +68,26 @@ class ProfilesModule {
 
     public function connectTaxonomyToPostType() {
         // Ensure the taxonomy is properly connected to the post type
-        if (taxonomy_exists('scn_topic') && post_type_exists('scn_course')) {
-            register_taxonomy_for_object_type('scn_topic', 'scn_course');
-        }
+        // Taxonomy connection removed - using ACF field instead of native taxonomy
+        // if (taxonomy_exists('scn_topic') && post_type_exists('course')) {
+        //     register_taxonomy_for_object_type('scn_topic', 'course');
+        // }
     }
 
     public function addCapabilities() {
         $role = \get_role('administrator');
         if ($role) {
             $capabilities = [
-                'edit_scn_profiles',
-                'edit_others_scn_profiles',
-                'publish_scn_profiles',
-                'read_private_scn_profiles',
-                'delete_scn_profiles',
-                'delete_private_scn_profiles',
-                'delete_published_scn_profiles',
-                'delete_others_scn_profiles',
-                'edit_private_scn_profiles',
-                'edit_published_scn_profiles',
+                'edit_profiles',
+                'edit_others_profiles',
+                'publish_profiles',
+                'read_private_profiles',
+                'delete_profiles',
+                'delete_private_profiles',
+                'delete_published_profiles',
+                'delete_others_profiles',
+                'edit_private_profiles',
+                'edit_published_profiles',
             ];
 
             foreach ($capabilities as $cap) {
@@ -98,14 +99,14 @@ class ProfilesModule {
         $editor_role = \get_role('editor');
         if ($editor_role) {
             $editor_capabilities = [
-                'edit_scn_profiles',
-                'edit_others_scn_profiles',
-                'publish_scn_profiles',
-                'read_private_scn_profiles',
-                'delete_scn_profiles',
-                'delete_others_scn_profiles',
-                'delete_published_scn_profiles',
-                'edit_published_scn_profiles',
+                'edit_profiles',
+                'edit_others_profiles',
+                'publish_profiles',
+                'read_private_profiles',
+                'delete_profiles',
+                'delete_others_profiles',
+                'delete_published_profiles',
+                'edit_published_profiles',
             ];
 
             foreach ($editor_capabilities as $cap) {
@@ -117,10 +118,10 @@ class ProfilesModule {
         $author_role = \get_role('author');
         if ($author_role) {
             $author_capabilities = [
-                'edit_scn_profiles',
-                'publish_scn_profiles',
-                'delete_scn_profiles',
-                'edit_published_scn_profiles',
+                'edit_profiles',
+                'publish_profiles',
+                'delete_profiles',
+                'edit_published_profiles',
             ];
 
             foreach ($author_capabilities as $cap) {

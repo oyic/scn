@@ -23,10 +23,10 @@ echo "Current rewrite rules: " . (is_array($rules) ? count($rules) : 'none') . "
 
 // Define our authentication rules
 $auth_rules = [
-    '^member-login/?$' => 'index.php?scn_member_login=1',
-    '^member-register/?$' => 'index.php?scn_member_register=1',
-    '^member-dashboard/?$' => 'index.php?scn_member_dashboard=1',
-    '^member-logout/?$' => 'index.php?scn_member_logout=1',
+    '^member-login/?$' => 'index.php?member_login=1',
+    '^member-register/?$' => 'index.php?member_register=1',
+    '^member-dashboard/?$' => 'index.php?member_dashboard=1',
+    '^member-logout/?$' => 'index.php?member_logout=1',
     '^test-auth/?$' => 'index.php?scn_test_auth=1'
 ];
 
@@ -50,10 +50,10 @@ if (!$all_present || !is_array($rules)) {
     delete_option('rewrite_rules');
     
     // Add our rules manually
-    add_rewrite_rule('^member-login/?$', 'index.php?scn_member_login=1', 'top');
-    add_rewrite_rule('^member-register/?$', 'index.php?scn_member_register=1', 'top');
-    add_rewrite_rule('^member-dashboard/?$', 'index.php?scn_member_dashboard=1', 'top');
-    add_rewrite_rule('^member-logout/?$', 'index.php?scn_member_logout=1', 'top');
+    add_rewrite_rule('^member-login/?$', 'index.php?member_login=1', 'top');
+    add_rewrite_rule('^member-register/?$', 'index.php?member_register=1', 'top');
+    add_rewrite_rule('^member-dashboard/?$', 'index.php?member_dashboard=1', 'top');
+    add_rewrite_rule('^member-logout/?$', 'index.php?member_logout=1', 'top');
     add_rewrite_rule('^test-auth/?$', 'index.php?scn_test_auth=1', 'top');
     
     // Flush rewrite rules

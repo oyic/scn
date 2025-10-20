@@ -10,15 +10,15 @@ class FrontendTemplates {
     }
 
     public function loadTemplates() {
-        if (is_singular('scn_course')) {
+        if (is_singular('course')) {
             add_filter('template_include', [$this, 'loadSingleCourseTemplate']);
-        } elseif (is_post_type_archive('scn_course')) {
+        } elseif (is_post_type_archive('course')) {
             add_filter('template_include', [$this, 'loadArchiveCourseTemplate']);
         }
     }
 
     public function loadSingleCourseTemplate($template) {
-        $custom_template = locate_template(['single-scn_course.php']);
+        $custom_template = locate_template(['single-course.php']);
         if ($custom_template) {
             return $custom_template;
         }
@@ -32,7 +32,7 @@ class FrontendTemplates {
     }
 
     public function loadArchiveCourseTemplate($template) {
-        $custom_template = locate_template(['archive-scn_course.php']);
+        $custom_template = locate_template(['archive-course.php']);
         if ($custom_template) {
             return $custom_template;
         }
@@ -46,14 +46,14 @@ class FrontendTemplates {
     }
 
     public function enqueueFrontendScripts() {
-        if (is_singular('scn_course') || is_post_type_archive('scn_course')) {
+        if (is_singular('course') || is_post_type_archive('course')) {
             wp_enqueue_style('scn-courses-frontend', plugin_dir_url(__FILE__) . '../../../assets/css/courses.css', [], '1.0.0');
         }
     }
 
     public function addCoursesToProfile($profile_id) {
         $courses = get_posts([
-            'post_type' => 'scn_course',
+            'post_type' => 'course',
             'author' => get_post_field('post_author', $profile_id),
             'post_status' => 'publish',
             'posts_per_page' => -1,
@@ -77,7 +77,7 @@ class FrontendTemplates {
                     <div class="scn-course-card">
                         <div class="scn-course-image">
                             <?php
-                            $image_id = get_post_meta($course->ID, 'scn_course_image_id', true);
+                            $image_id = get_post_thumbnail_id($course->ID);
                             if ($image_id) {
                                 echo wp_get_attachment_image($image_id, 'medium', false, ['alt' => get_the_title($course->ID)]);
                             } else {
@@ -93,7 +93,7 @@ class FrontendTemplates {
                         <div class="scn-course-content">
                             <h4><a href="<?php echo get_permalink($course->ID); ?>"><?php echo get_the_title($course->ID); ?></a></h4>
                             <?php
-                            $subtitle = get_post_meta($course->ID, 'scn_course_subtitle', true);
+                            $subtitle = get_field('scn_course_subtitle', $course->ID);
                             if ($subtitle) {
                                 echo '<p class="scn-course-subtitle">' . esc_html($subtitle) . '</p>';
                             }
@@ -107,9 +107,9 @@ class FrontendTemplates {
                                 echo '</div>';
                             }
                             
-                            $ce_enabled = get_post_meta($course->ID, 'scn_course_ce_enabled', true);
+                            $ce_enabled = get_field('scn_course_ce_enabled', $course->ID);
                             if ($ce_enabled) {
-                                $ce_hours = get_post_meta($course->ID, 'scn_course_ce_hours', true);
+                                $ce_hours = get_field('scn_course_ce_hours', $course->ID);
                                 echo '<div class="scn-ce-badge">' . sprintf(__('Provides %s CE hours', 'scn-membership'), $ce_hours) . '</div>';
                             }
                             ?>
@@ -122,7 +122,7 @@ class FrontendTemplates {
     }
 
     public static function getCourseImage($course_id, $size = 'medium') {
-        $image_id = get_post_meta($course_id, 'scn_course_image_id', true);
+        $image_id = get_post_thumbnail_id($course_id);
         
         if ($image_id) {
             return wp_get_attachment_image($image_id, $size, false, ['alt' => get_the_title($course_id)]);
@@ -152,17 +152,17 @@ class FrontendTemplates {
     }
 
     public static function getCeBadge($course_id) {
-        $ce_enabled = get_post_meta($course_id, 'scn_course_ce_enabled', true);
+        $ce_enabled = get_field('scn_course_ce_enabled', $course_id);
         if (!$ce_enabled) {
             return '';
         }
         
-        $ce_hours = get_post_meta($course_id, 'scn_course_ce_hours', true);
+        $ce_hours = get_field('scn_course_ce_hours', $course_id);
         return '<div class="scn-ce-badge">' . sprintf(__('Provides %s CE hours', 'scn-membership'), $ce_hours) . '</div>';
     }
 
     public static function getCourseFormats($course_id) {
-        $formats = get_post_meta($course_id, 'scn_course_formats', true) ?: [];
+        $formats = get_field('scn_course_formats', $course_id) ?: [];
         if (empty($formats)) {
             return '';
         }
@@ -180,7 +180,7 @@ class FrontendTemplates {
     }
 
     public static function getCourseOutcomes($course_id) {
-        $outcomes = get_post_meta($course_id, 'scn_course_outcomes', true) ?: [];
+        $outcomes = get_field('scn_course_outcomes', $course_id) ?: [];
         if (empty($outcomes)) {
             return '';
         }
@@ -195,7 +195,7 @@ class FrontendTemplates {
     }
 
     public static function getOnDemandInfo($course_id) {
-        $ondemand = get_post_meta($course_id, 'scn_course_ondemand', true) ?: [];
+        $ondemand = get_field('scn_course_ondemand', $course_id) ?: [];
         if (empty($ondemand['link'])) {
             return '';
         }

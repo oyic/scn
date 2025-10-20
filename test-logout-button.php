@@ -104,9 +104,9 @@ if ($dashboard_page) {
     
     // Check if shortcode is in page content
     $page_content = get_post_field('post_content', $dashboard_page->ID);
-    if (strpos($page_content, '[scn_member_dashboard]') !== false) {
+    if (strpos($page_content, '[member_dashboard]') !== false) {
         echo "<div class='success'>";
-        echo "<p>✅ Page contains [scn_member_dashboard] shortcode</p>";
+        echo "<p>✅ Page contains [member_dashboard] shortcode</p>";
         echo "</div>";
     } else {
         echo "<div class='warning'>";

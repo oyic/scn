@@ -52,7 +52,7 @@ get_header(); ?>
                         </h2>
                         
                         <?php
-                        $subtitle = get_post_meta(get_the_ID(), 'scn_course_subtitle', true);
+                        $subtitle = get_post_meta(get_the_ID(), 'course_subtitle', true);
                         if ($subtitle) {
                             echo '<p class="scn-course-subtitle">' . esc_html($subtitle) . '</p>';
                         }
@@ -69,7 +69,7 @@ get_header(); ?>
                         
                         <div class="scn-course-excerpt">
                             <?php
-                            $description = get_post_meta(get_the_ID(), 'scn_course_description', true);
+                            $description = get_post_meta(get_the_ID(), 'course_description', true);
                             if ($description) {
                                 echo '<p>' . wp_trim_words($description, 20) . '</p>';
                             } else {
@@ -82,7 +82,7 @@ get_header(); ?>
                             <?php
                             $author_id = get_post_field('post_author', get_the_ID());
                             $author_profile = get_posts([
-                                'post_type' => 'scn_profile',
+                                'post_type' => 'profile',
                                 'author' => $author_id,
                                 'post_status' => 'publish',
                                 'posts_per_page' => 1

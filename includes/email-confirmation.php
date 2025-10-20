@@ -147,7 +147,7 @@ The SCN Team', 'scn-membership'),
         
         // Update profile status
         $profile_posts = get_posts([
-            'post_type' => 'scn_profile',
+            'post_type' => 'profile',
             'meta_query' => [
                 [
                     'key' => 'scn_user_id',
@@ -160,7 +160,7 @@ The SCN Team', 'scn-membership'),
         ]);
         
         if (!empty($profile_posts)) {
-            update_post_meta($profile_posts[0]->ID, 'scn_profile_verified', true);
+            update_post_meta($profile_posts[0]->ID, 'profile_verified', true);
             update_post_meta($profile_posts[0]->ID, 'scn_verified_date', current_time('mysql'));
         }
     }

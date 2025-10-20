@@ -58,7 +58,7 @@ $login_content = "Use the form below to log in to your member account.";
 $login_id = create_page_with_shortcode(
     'member-login', 
     'Member Login', 
-    '[scn_member_login]',
+    '[member_login]',
     $login_content
 );
 
@@ -71,7 +71,7 @@ $dashboard_content = "Welcome to your member dashboard. Here you can manage your
 $dashboard_id = create_page_with_shortcode(
     'member-dashboard', 
     'Member Dashboard', 
-    '[scn_member_dashboard]',
+    '[member_dashboard]',
     $dashboard_content
 );
 
@@ -84,7 +84,7 @@ $register_content = "Create a new member account to access our member features."
 $register_id = create_page_with_shortcode(
     'member-register', 
     'Member Registration', 
-    '[scn_member_register]',
+    '[member_register]',
     $register_content
 );
 

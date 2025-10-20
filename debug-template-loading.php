@@ -109,7 +109,7 @@ if (file_exists($dashboard_template)) {
     
     // Set up a test session
     $test_profile = get_posts([
-        'post_type' => 'scn_profile',
+        'post_type' => 'profile',
         'meta_query' => [
             [
                 'key' => 'scn_username',
@@ -216,9 +216,9 @@ echo "<h3>Current Query Variables</h3>";
 echo "</div>";
 
 $query_vars = [
-    'scn_member_dashboard' => get_query_var('scn_member_dashboard'),
-    'scn_member_login' => get_query_var('scn_member_login'),
-    'scn_member_logout' => get_query_var('scn_member_logout')
+    'member_dashboard' => get_query_var('member_dashboard'),
+    'member_login' => get_query_var('member_login'),
+    'member_logout' => get_query_var('member_logout')
 ];
 
 foreach ($query_vars as $var => $value) {

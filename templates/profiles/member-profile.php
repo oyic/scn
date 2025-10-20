@@ -9,6 +9,20 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Helper function to get SVG icon by platform
+function scn_get_social_icon_svg($platform) {
+    $icons = [
+        'linkedin' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
+        'twitter' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>',
+        'facebook' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
+        'instagram' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm4.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>',
+        'youtube' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
+        'website' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>',
+        'custom' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>'
+    ];
+    return $icons[$platform] ?? $icons['custom'];
+}
+
 // Get profile ID from URL parameter
 $profile_id = isset($_GET['profile_id']) ? intval($_GET['profile_id']) : 0;
 
@@ -24,7 +38,7 @@ if (!$profile_id) {
 // Get the profile post
 $profile = get_post($profile_id);
 
-if (!$profile || $profile->post_type !== 'scn_profile' || $profile->post_status !== 'publish') {
+if (!$profile || $profile->post_type !== 'profile' || $profile->post_status !== 'publish') {
     echo '<div class="scn-profile-error">';
     echo '<h2>Profile Not Found</h2>';
     echo '<p>The requested profile could not be found or is not available.</p>';
@@ -40,7 +54,7 @@ $credentials = get_post_meta($profile_id, 'scn_credentials', true);
 $bio = get_post_meta($profile_id, 'scn_bio', true);
 $location = get_post_meta($profile_id, 'scn_location', true);
 $main_url = get_post_meta($profile_id, 'scn_main_url', true);
-$member_since = get_post_meta($profile_id, 'scn_member_since', true);
+$member_since = get_post_meta($profile_id, 'member_since', true);
 
 // Get social links (stored as array with order)
 $social_links_raw = get_post_meta($profile_id, 'scn_social_links', true);
@@ -293,14 +307,13 @@ h1.page-title {
     background: #f8f9fa;
     padding: 20px;
     border-radius: 8px;
-    border-left: 4px solid #007cba;
+    /* border-left: 4px solid #007cba; */
     position: relative;
     overflow: visible;
     box-sizing: border-box;
 }
 
 .scn-profile-section h3 {
-    margin: 0 0 15px 0;
     color: #2c3e50;
     font-size: 20px;
 }
@@ -1128,6 +1141,324 @@ h1.page-title {
 .scn-events-content {
     padding: 20px 0;
 }
+
+/* Course Accordion Styles */
+.scn-courses-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.scn-course-accordion-item {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.scn-course-accordion-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: #d1d5db;
+}
+
+.scn-course-accordion-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    cursor: pointer;
+    background: #fff;
+    transition: background 0.2s;
+}
+
+.scn-course-accordion-header:hover {
+    background: #f9fafb;
+}
+
+.scn-course-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex: 1;
+}
+
+.scn-course-thumbnail {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f3f4f6;
+}
+
+.scn-course-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.scn-course-header-info {
+    flex: 1;
+}
+
+.scn-course-accordion-title {
+    margin: 0 0 6px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+}
+
+.scn-course-accordion-subtitle {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.scn-course-header-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.scn-course-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 6px;
+    line-height: 1.4;
+}
+
+.scn-course-badge .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+}
+
+.scn-badge-ce {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.scn-badge-format {
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+
+.scn-badge-topic {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.scn-badge-more {
+    background: #f3f4f6;
+    color: #6b7280;
+}
+
+.scn-course-accordion-toggle {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.scn-course-accordion-toggle:hover {
+    background: #e5e7eb;
+}
+
+.scn-course-accordion-toggle .dashicons {
+    transition: transform 0.3s ease;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+}
+
+.scn-course-accordion-item.active .scn-course-accordion-toggle .dashicons {
+    transform: rotate(180deg);
+}
+
+.scn-course-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+.scn-course-accordion-item.active .scn-course-accordion-content {
+    max-height: 5000px;
+}
+
+.scn-course-content-inner {
+    padding: 0 24px 24px;
+    border-top: 1px solid #f3f4f6;
+}
+
+.scn-course-section {
+    margin-top: 24px;
+}
+
+.scn-course-section h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.scn-course-section h4 .dashicons {
+    color: #6b7280;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.scn-course-section p {
+    margin: 0;
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+.scn-course-full-content {
+    background: #f9fafb;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.scn-course-content-text {
+    color: #374151;
+    line-height: 1.7;
+}
+
+.scn-course-content-text h1,
+.scn-course-content-text h2,
+.scn-course-content-text h3 {
+    margin-top: 24px;
+    margin-bottom: 12px;
+    color: #111827;
+}
+
+.scn-course-content-text p {
+    margin-bottom: 16px;
+}
+
+.scn-course-content-text ul,
+.scn-course-content-text ol {
+    margin: 16px 0;
+    padding-left: 24px;
+}
+
+.scn-course-content-text li {
+    margin-bottom: 8px;
+}
+
+.scn-course-outcomes-list {
+    margin: 0;
+    padding-left: 20px;
+    list-style: none;
+}
+
+.scn-course-outcomes-list li {
+    position: relative;
+    padding-left: 28px;
+    margin-bottom: 12px;
+    color: #374151;
+    line-height: 1.6;
+}
+
+.scn-course-outcomes-list li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #10b981;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.scn-course-topics-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.scn-topic-pill {
+    padding: 6px 14px;
+    background: #f3f4f6;
+    color: #374151;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.scn-course-actions {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.scn-course-actions .scn-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.scn-course-actions .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.scn-empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+}
+
+.scn-empty-state .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.scn-empty-state p {
+    margin: 0;
+    font-size: 16px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .scn-course-header-left {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .scn-course-thumbnail {
+        width: 100%;
+        height: 180px;
+    }
+    
+    .scn-course-accordion-header {
+        padding: 16px;
+    }
+    
+    .scn-course-content-inner {
+        padding: 0 16px 16px;
+    }
+}
 </style>
 
 <script>
@@ -1782,6 +2113,37 @@ window.addEventListener('keydown', function(event) {
         closeImageLightbox();
     }
 });
+
+// Course Accordion Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const accordionItems = document.querySelectorAll('.scn-course-accordion-item');
+    
+    accordionItems.forEach(item => {
+        const header = item.querySelector('.scn-course-accordion-header');
+        const toggle = item.querySelector('.scn-course-accordion-toggle');
+        
+        // Handle click on header or toggle button
+        const handleToggle = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Close other items (optional - remove if you want multiple items open)
+            accordionItems.forEach(otherItem => {
+                if (otherItem !== item && otherItem.classList.contains('active')) {
+                    otherItem.classList.remove('active');
+                    otherItem.querySelector('.scn-course-accordion-toggle').setAttribute('aria-expanded', 'false');
+                }
+            });
+            
+            // Toggle current item
+            const isActive = item.classList.toggle('active');
+            toggle.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+        };
+        
+        header.addEventListener('click', handleToggle);
+        toggle.addEventListener('click', handleToggle);
+    });
+});
 </script>
 
 <div class="scn-profile-page-wrapper">
@@ -1846,19 +2208,6 @@ window.addEventListener('keydown', function(event) {
                 <div class="scn-social-icons-wrapper">
                 <div class="scn-social-icons">
                     <?php 
-                    // Helper function to get SVG icon by platform
-                    function get_social_icon_svg($platform) {
-                        $icons = [
-                            'linkedin' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
-                            'twitter' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>',
-                            'facebook' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>',
-                            'instagram' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm4.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>',
-                            'youtube' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
-                            'website' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>',
-                            'custom' => '<svg class="scn-social-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>'
-                        ];
-                        return $icons[$platform] ?? $icons['custom'];
-                    }
                     
                     // Display links in order
                     foreach ($social_links as $link): 
@@ -1870,7 +2219,7 @@ window.addEventListener('keydown', function(event) {
                         if (empty($url) || $url === $main_url) continue;
                     ?>
                         <a href="<?php echo esc_url($url); ?>" target="_blank" class="scn-social-icon-link" title="<?php echo esc_attr($label); ?>">
-                            <?php echo get_social_icon_svg($platform); ?>
+                                <?php echo scn_get_social_icon_svg($platform); ?>
                         </a>
                     <?php endforeach; ?>
                 </div>
@@ -2016,10 +2365,20 @@ window.addEventListener('keydown', function(event) {
                     <h3>Photo Gallery</h3>
                     <div class="scn-gallery">
                         <?php foreach ($gallery_images as $image_id): ?>
-                            <?php $image_url = wp_get_attachment_image_url($image_id, 'medium'); ?>
+                            <?php 
+                            $image_url = wp_get_attachment_image_url($image_id, 'medium');
+                            // Get alt text
+                            $image_alt = get_post_meta($image_id, '_wp_attachment_image_alt', true);
+                            if (!$image_alt) {
+                                $image_alt = 'Gallery Photo of ' . $first_name . ' ' . $last_name;
+                                if ($credentials) {
+                                    $image_alt .= ', ' . $credentials;
+                                }
+                            }
+                            ?>
                             <?php if ($image_url): ?>
                                 <div class="scn-gallery-item">
-                                    <img src="<?php echo esc_url($image_url); ?>" alt="Gallery image">
+                                    <img src="<?php echo esc_url($image_url); ?>" alt="<?php echo esc_attr($image_alt); ?>">
                                 </div>
                             <?php endif; ?>
                         <?php endforeach; ?>
@@ -2062,17 +2421,339 @@ window.addEventListener('keydown', function(event) {
     
     <!-- Tab Content: Courses -->
     <div class="scn-tab-content" data-content="courses">
-        <div class="scn-courses-content">
-            <p>Courses content coming soon...</p>
-        </div>
+        <?php
+        // Debug: Log that we're entering the courses section
+        error_log('SCN: ENTERING COURSES SECTION - Profile ID: ' . $profile_id);
+        echo '<!-- DEBUG: Courses section is loading in member-profile.php -->';
+        echo '<div style="background: yellow; padding: 10px; margin: 10px 0;">DEBUG: Courses section is being processed</div>';
+        
+        // Get member's user ID
+        $member_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        error_log('SCN: Member user ID: ' . $member_user_id);
+        
+        // Force fresh load of courses field - bypass ALL caches
+        wp_cache_delete($profile_id, 'post_meta');
+        if (function_exists('acf_get_store')) {
+            acf_get_store('values')->remove($profile_id);
+        }
+        
+        // Get courses from ACF repeater field
+        $courses_repeater = get_field('courses', $profile_id, false);
+        error_log('SCN: Courses repeater field result: ' . print_r($courses_repeater, true));
+        
+        // Fallback to member_courses if courses doesn't exist
+        if (!$courses_repeater) {
+            $courses_repeater = get_field('member_courses', $profile_id, false);
+            error_log('SCN: Member courses field result: ' . print_r($courses_repeater, true));
+        }
+        
+        $member_courses = [];
+        
+        // Handle repeater field structure
+        if ($courses_repeater !== false && $courses_repeater !== null && $courses_repeater !== '' && is_array($courses_repeater) && !empty($courses_repeater)) {
+            // Extract course IDs from repeater structure
+            $course_ids = [];
+            foreach ($courses_repeater as $course_row) {
+                if (is_array($course_row) && isset($course_row['course'])) {
+                    $course_id = $course_row['course'];
+                    
+                    // Only include actual course post types
+                    if (get_post_type($course_id) === 'course') {
+                        $course_ids[] = $course_id;
+                    }
+                }
+            }
+            
+            if (!empty($course_ids)) {
+                $member_courses = get_posts([
+                    'post_type' => 'course',
+                    'post__in' => $course_ids,
+                    'posts_per_page' => -1,
+                    'post_status' => 'publish',
+                    'orderby' => 'post__in',
+                ]);
+            }
+        } elseif ($courses_repeater === false || $courses_repeater === null || $courses_repeater === '') {
+            // Field never been set - fallback to courses by author
+            error_log('SCN: Courses repeater is empty, trying author fallback');
+            if ($member_user_id) {
+                error_log('SCN: Searching for courses by author ID: ' . $member_user_id);
+                $member_courses = get_posts([
+                    'post_type' => 'course',
+                    'author' => $member_user_id,
+                    'posts_per_page' => -1,
+                    'post_status' => 'publish',
+                    'orderby' => 'date',
+                    'order' => 'DESC'
+                ]);
+                error_log('SCN: Found ' . count($member_courses) . ' courses by author');
+            } else {
+                error_log('SCN: No member user ID found');
+            }
+        }
+        // If $course_ids is an empty array, field was set but cleared - show no courses
+        
+        if (!empty($member_courses)):
+            $current_user_id = get_current_user_id();
+            $is_own_profile = ($current_user_id && $current_user_id == $member_user_id);
+        ?>
+            <div class="scn-courses-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0;">Courses</h3>
+                <?php if ($is_own_profile): ?>
+                    <button class="scn-add-course-btn" onclick="openCourseModal('add')" style="background: #0073aa; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                        <span class="dashicons dashicons-plus"></span> Add Course
+                    </button>
+                <?php endif; ?>
+            </div>
+            <div class="scn-courses-list">
+                <?php foreach ($member_courses as $index => $course):
+                    $course_id = $course->ID;
+                    $subtitle = get_field('scn_course_subtitle', $course_id);
+                    $description = get_field('scn_course_description', $course_id);
+                    $ce_enabled = get_field('scn_course_ce_enabled', $course_id);
+                    $ce_hours = get_field('scn_course_ce_hours', $course_id);
+                    $formats = get_field('scn_course_formats', $course_id);
+                    $outcomes = get_field('scn_course_outcomes', $course_id);
+                    $thumbnail_id = get_post_thumbnail_id($course_id);
+                    
+                    if (!$thumbnail_id) {
+                        $default_image = get_posts([
+                            'post_type' => 'attachment',
+                            'meta_key' => 'scn_default_course_image',
+                            'meta_value' => '1',
+                            'posts_per_page' => 1
+                        ]);
+                        $thumbnail_id = !empty($default_image) ? $default_image[0]->ID : null;
+                    }
+                    
+                    $thumbnail_url = $thumbnail_id ? wp_get_attachment_image_url($thumbnail_id, 'large') : '';
+                    $topics = wp_get_post_terms($course_id, 'scn_topic', ['fields' => 'names']);
+                ?>
+                    <div class="scn-course-accordion-item" data-course-id="<?php echo $course_id; ?>">
+                        <div class="scn-course-accordion-header">
+                            <div class="scn-course-header-left">
+                                <?php if ($thumbnail_url): ?>
+                                    <div class="scn-course-thumbnail">
+                                        <img src="<?php echo esc_url($thumbnail_url); ?>" alt="<?php echo esc_attr($course->post_title); ?>">
+                                    </div>
+                                <?php endif; ?>
+                                <div class="scn-course-header-info">
+                                    <h3 class="scn-course-accordion-title"><?php echo esc_html($course->post_title); ?></h3>
+                                    <?php if ($subtitle): ?>
+                                        <p class="scn-course-accordion-subtitle"><?php echo esc_html($subtitle); ?></p>
+                                    <?php endif; ?>
+                                    <div class="scn-course-header-meta">
+                                        <?php if ($ce_enabled && $ce_hours): ?>
+                                            <span class="scn-course-badge scn-badge-ce">
+                                                <span class="dashicons dashicons-awards"></span>
+                                                <?php echo $ce_hours; ?> CE Hours
+                                            </span>
+                                        <?php endif; ?>
+                                        <?php if (!empty($formats) && is_array($formats)): ?>
+                                            <?php foreach ($formats as $format): ?>
+                                                <span class="scn-course-badge scn-badge-format">
+                                                    <span class="dashicons dashicons-<?php echo $format === 'live' ? 'video-alt3' : 'video-alt2'; ?>"></span>
+                                                    <?php echo ucfirst($format); ?>
+                                                </span>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                        <?php if (!empty($topics) && !is_wp_error($topics)): ?>
+                                            <?php foreach (array_slice($topics, 0, 2) as $topic): ?>
+                                                <span class="scn-course-badge scn-badge-topic"><?php echo esc_html($topic); ?></span>
+                                            <?php endforeach; ?>
+                                            <?php if (count($topics) > 2): ?>
+                                                <span class="scn-course-badge scn-badge-more">+<?php echo count($topics) - 2; ?> more</span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="scn-course-accordion-toggle" aria-expanded="false">
+                                <span class="dashicons dashicons-arrow-down-alt2"></span>
+                            </button>
+                        </div>
+                        
+                        <div class="scn-course-accordion-content">
+                            <div class="scn-course-content-inner">
+                                <?php if ($description): ?>
+                                    <div class="scn-course-section">
+                                        <h4><span class="dashicons dashicons-info"></span> Description</h4>
+                                        <p><?php echo esc_html($description); ?></p>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <?php if ($course->post_content): ?>
+                                    <div class="scn-course-section scn-course-full-content">
+                                        <h4><span class="dashicons dashicons-text-page"></span> Course Content</h4>
+                                        <div class="scn-course-content-text">
+                                            <?php echo apply_filters('the_content', $course->post_content); ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($outcomes) && is_array($outcomes)): ?>
+                                    <div class="scn-course-section">
+                                        <h4><span class="dashicons dashicons-yes-alt"></span> Learning Outcomes</h4>
+                                        <ul class="scn-course-outcomes-list">
+                                            <?php foreach ($outcomes as $outcome): ?>
+                                                <?php if (!empty($outcome)): ?>
+                                                    <li><?php echo esc_html($outcome); ?></li>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <?php if (!empty($topics) && !is_wp_error($topics)): ?>
+                                    <div class="scn-course-section">
+                                        <h4><span class="dashicons dashicons-tag"></span> Topics Covered</h4>
+                                        <div class="scn-course-topics-list">
+                                            <?php foreach ($topics as $topic): ?>
+                                                <span class="scn-topic-pill"><?php echo esc_html($topic); ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+                                
+                                <div class="scn-course-actions">
+                                    <a href="<?php echo get_permalink($course_id); ?>" class="scn-btn scn-btn-primary">
+                                        <span class="dashicons dashicons-welcome-learn-more"></span>
+                                        View Full Course
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="scn-profile-section scn-empty-state">
+                <span class="dashicons dashicons-welcome-learn-more"></span>
+                <p>No courses created yet.</p>
+            </div>
+        <?php endif; ?>
     </div>
     <!-- End Courses Tab -->
     
     <!-- Tab Content: Events -->
     <div class="scn-tab-content" data-content="events">
-        <div class="scn-events-content">
-            <p>Events content coming soon...</p>
-        </div>
+        <?php
+        // Get events for this member
+        $member_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        $events = get_posts([
+            'post_type' => 'event',
+            'author' => $member_user_id,
+            'posts_per_page' => -1,
+            'post_status' => 'publish',
+            'orderby' => 'meta_value',
+            'meta_key' => 'scn_event_start_date',
+            'order' => 'DESC'
+        ]);
+        
+        if (!empty($events)):
+        ?>
+            <div class="scn-events-content">
+                <?php foreach ($events as $event): 
+                    $event_id = $event->ID;
+                    $event_title = $event->post_title;
+                    $event_description = $event->post_content;
+                    $start_date = get_field('scn_event_start_date', $event_id);
+                    $end_date = get_field('scn_event_end_date', $event_id);
+                    $location = get_field('scn_event_location', $event_id);
+                    $website = get_field('scn_event_website', $event_id);
+                ?>
+                    <div class="scn-event-item" style="margin-bottom: 30px; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div class="scn-event-header">
+                            <h3 style="margin: 0 0 10px 0; color: #2c3e50;">
+                                <?php echo esc_html($event_title); ?>
+                            </h3>
+                            <div class="scn-event-meta" style="display: flex; gap: 20px; margin-bottom: 15px; color: #6b7280; font-size: 14px;">
+                                <?php if ($start_date): ?>
+                                    <span><span class="dashicons dashicons-calendar-alt"></span> <?php echo esc_html(date('F j, Y', strtotime($start_date))); ?></span>
+                                <?php endif; ?>
+                                <?php if ($location): ?>
+                                    <span><span class="dashicons dashicons-location"></span> <?php echo esc_html($location); ?></span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <?php if ($event_description): ?>
+                            <div class="scn-event-description" style="margin-bottom: 15px; color: #374151; line-height: 1.6;">
+                                <?php echo wp_trim_words($event_description, 50); ?>
+                            </div>
+                        <?php endif; ?>
+                        
+                        <?php
+                        // Get courses from event repeater field
+                        $event_courses = get_field('courses', $event_id, false);
+                        
+                        if ($event_courses && is_array($event_courses) && !empty($event_courses)) {
+                            $course_ids = [];
+                            foreach ($event_courses as $course_row) {
+                                if (is_array($course_row) && isset($course_row['course'])) {
+                                    $course_id = $course_row['course'];
+                                    if (get_post_type($course_id) === 'course') {
+                                        $course_ids[] = $course_id;
+                                    }
+                                }
+                            }
+                            
+                            if (!empty($course_ids)) {
+                                $courses = get_posts([
+                                    'post_type' => 'course',
+                                    'post__in' => $course_ids,
+                                    'posts_per_page' => -1,
+                                    'post_status' => 'publish',
+                                    'orderby' => 'post__in',
+                                ]);
+                                
+                                if (!empty($courses)) {
+                        ?>
+                                    <div class="scn-event-courses" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                        <h4 style="margin: 0 0 15px 0; color: #374151; font-size: 16px;">
+                                            <span class="dashicons dashicons-book-alt"></span> 
+                                            Courses at this Event
+                                        </h4>
+                                        <div class="scn-event-courses-list" style="display: grid; gap: 10px;">
+                                            <?php foreach ($courses as $course): ?>
+                                                <div class="scn-event-course-item" style="padding: 12px; background: #f9fafb; border-radius: 6px; border-left: 3px solid #0073aa;">
+                                                    <strong style="color: #111827; display: block; margin-bottom: 5px;">
+                                                        <?php echo esc_html($course->post_title); ?>
+                                                    </strong>
+                                                    <?php 
+                                                    $course_description = get_field('scn_course_description', $course->ID);
+                                                    if ($course_description): ?>
+                                                        <div style="font-size: 14px; color: #6b7280; line-height: 1.5;">
+                                                            <?php echo esc_html(wp_trim_words($course_description, 20)); ?>
+                                                        </div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                        <?php
+                                }
+                            }
+                        }
+                        ?>
+                        
+                        <?php if ($website): ?>
+                            <div class="scn-event-actions" style="margin-top: 15px;">
+                                <a href="<?php echo esc_url($website); ?>" target="_blank" class="scn-btn scn-btn-primary" style="display: inline-flex; align-items: center; gap: 5px;">
+                                    <span class="dashicons dashicons-admin-site"></span>
+                                    Visit Event Website
+                                </a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="scn-profile-section scn-empty-state">
+                <span class="dashicons dashicons-calendar-alt"></span>
+                <p>No events created yet.</p>
+            </div>
+        <?php endif; ?>
     </div>
     <!-- End Events Tab -->
         

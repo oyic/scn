@@ -20,15 +20,19 @@ class ProfileDashboard {
         add_action('wp_ajax_scn_get_enrolled_courses', [$this, 'handleGetEnrolledCoursesAjax']);
         add_action('wp_ajax_scn_get_created_courses', [$this, 'handleGetCreatedCoursesAjax']);
         add_action('wp_ajax_scn_create_course', [$this, 'handleCreateCourseAjax']);
+        add_action('wp_ajax_scn_get_course_data', [$this, 'handleGetCourseDataAjax']);
+        add_action('wp_ajax_scn_update_course', [$this, 'handleUpdateCourseAjax']);
         add_action('wp_ajax_scn_enroll_course', [$this, 'handleEnrollCourseAjax']);
-        add_action('wp_ajax_scn_get_created_events', [$this, 'handleGetCreatedEventsAjax']);
-        add_action('wp_ajax_scn_create_event', [$this, 'handleCreateEventAjax']);
         add_action('wp_ajax_update_basic_info', [$this, 'handleUpdateBasicInfoAjax']);
         add_action('wp_ajax_update_social_links', [$this, 'handleUpdateSocialLinksAjax']);
+        add_action('wp_ajax_update_quick_facts', [$this, 'handleUpdateQuickFactsAjax']);
+        add_action('wp_ajax_nopriv_update_quick_facts', [$this, 'handleUpdateQuickFactsAjax']);
+        add_action('wp_ajax_update_topics', [$this, 'handleUpdateTopicsAjax']);
+        add_action('wp_ajax_update_bio', [$this, 'handleUpdateBioAjax']);
         add_action('wp_ajax_update_profile_image', [$this, 'handleUpdateProfileImageAjax']);
         add_action('wp_ajax_upload_profile_image_temp', [$this, 'handleUploadProfileImageTempAjax']);
         add_action('wp_ajax_upload_profile_image_direct', [$this, 'handleUploadProfileImageDirectAjax']);
-        // add_shortcode('scn_member_dashboard', [$this, 'renderDashboardShortcode']); // Removed - handled by AuthShortcodes
+        // add_shortcode('member_dashboard', [$this, 'renderDashboardShortcode']); // Removed - handled by AuthShortcodes
         add_action('init', [$this, 'addRewriteRules']);
         add_filter('query_vars', [$this, 'addQueryVars']);
         add_filter('template_include', [$this, 'templateInclude']);
@@ -36,6 +40,8 @@ class ProfileDashboard {
 
     public function enqueueScripts() {
         if ($this->isDashboardPage()) {
+            // Enqueue Dashicons for frontend
+            wp_enqueue_style('dashicons');
 
             wp_enqueue_script(
                 'scn-dashboard',
@@ -128,7 +134,7 @@ class ProfileDashboard {
 
     private function getUserProfile($user_id) {
         $profile_posts = get_posts([
-            'post_type' => 'scn_profile',
+            'post_type' => 'member',
             'meta_query' => [
                 [
                     'key' => 'scn_user_id',
@@ -147,7 +153,7 @@ class ProfileDashboard {
         $user_id = get_post_meta($profile->ID, 'scn_user_id', true);
         $first_name = get_post_meta($profile->ID, 'scn_first_name', true);
         $last_name = get_post_meta($profile->ID, 'scn_last_name', true);
-        $member_since = get_post_meta($profile->ID, 'scn_member_since', true);
+        $member_since = get_post_meta($profile->ID, 'member_since', true);
 
         ?>
         <div class="scn-dashboard-container" data-user-id="<?php echo esc_attr($user_id); ?>">
@@ -290,7 +296,7 @@ class ProfileDashboard {
 
         // Verify the profile belongs to the current user
         $profile = get_post($profile_id);
-        if (!$profile || $profile->post_type !== 'scn_profile') {
+        if (!$profile || $profile->post_type !== 'member') {
             wp_send_json_error('Invalid profile');
         }
 
@@ -319,7 +325,7 @@ class ProfileDashboard {
 
         // Verify the profile belongs to the current user
         $profile = get_post($profile_id);
-        if (!$profile || $profile->post_type !== 'scn_profile') {
+        if (!$profile || $profile->post_type !== 'member') {
             wp_send_json_error('Invalid profile');
         }
 
@@ -351,7 +357,7 @@ class ProfileDashboard {
 
         // Verify the profile belongs to the current user
         $profile = get_post($profile_id);
-        if (!$profile || $profile->post_type !== 'scn_profile') {
+        if (!$profile || $profile->post_type !== 'member') {
             wp_send_json_error('Invalid profile');
         }
 
@@ -430,12 +436,12 @@ class ProfileDashboard {
 
         // Get courses count
         $courses_count = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'scn_course' AND post_author = %d AND post_status = 'publish'",
+            "SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_type = 'course' AND post_author = %d AND post_status = 'publish'",
             $user_id
         ));
 
         // Get profile views (if tracking is implemented)
-        $profile_views = get_post_meta($profile_id, 'scn_profile_views', true) ?: 0;
+        $profile_views = get_post_meta($profile_id, 'profile_views', true) ?: 0;
 
         return [
             'total_sessions' => intval($sessions_count),
@@ -484,7 +490,7 @@ class ProfileDashboard {
                 'required' => true,
                 'weight' => 3
             ],
-            'scn_member_since' => [
+            'member_since' => [
                 'label' => __('Member Since', 'scn-membership'),
                 'required' => false,
                 'weight' => 1
@@ -593,7 +599,7 @@ class ProfileDashboard {
             'scn_main_url' => get_post_meta($profile_id, 'scn_main_url', true),
             'scn_social_links' => $social_links,
             'scn_bio' => get_post_meta($profile_id, 'scn_bio', true),
-            'scn_member_since' => get_post_meta($profile_id, 'scn_member_since', true),
+            'member_since' => get_post_meta($profile_id, 'member_since', true),
             'scn_featured_video_url' => get_post_meta($profile_id, 'scn_featured_video_url', true),
             'scn_gallery_images' => $gallery_images,
             'scn_press_kit_files' => $press_kit_files,
@@ -626,8 +632,8 @@ class ProfileDashboard {
                     <input type="text" id="scn_location" name="scn_location" value="<?php echo esc_attr($profile_data['scn_location']); ?>" required placeholder="City, State/Country">
                 </div>
                 <div class="scn-form-group">
-                    <label for="scn_member_since">Member Since</label>
-                    <input type="date" id="scn_member_since" name="scn_member_since" value="<?php echo esc_attr($profile_data['scn_member_since']); ?>">
+                    <label for="member_since">Member Since</label>
+                    <input type="date" id="member_since" name="member_since" value="<?php echo esc_attr($profile_data['member_since']); ?>">
                     <div class="scn-form-help">When did you become a member?</div>
                 </div>
                 <div class="scn-form-group">
@@ -665,7 +671,7 @@ class ProfileDashboard {
             <h3><span class="dashicons dashicons-camera"></span>Profile Image</h3>
             <div class="scn-form-grid">
                 <div class="scn-form-group full-width">
-                    <label for="scn_profile_image">Profile Image</label>
+                    <label for="profile_image">Profile Image</label>
                     <div class="scn-image-upload-container">
                         <div class="scn-image-preview">
                             <?php if ($profile_data['profile_image_id']): ?>
@@ -684,7 +690,7 @@ class ProfileDashboard {
                             <span class="dashicons dashicons-upload"></span>
                             <?php _e('Upload Image', 'scn-membership'); ?>
                         </button>
-                        <input type="hidden" id="scn_profile_image" name="scn_profile_image" value="<?php echo esc_attr($profile_data['profile_image_id']); ?>">
+                        <input type="hidden" id="profile_image" name="profile_image" value="<?php echo esc_attr($profile_data['profile_image_id']); ?>">
                     </div>
                     <div class="scn-form-help">Upload a professional headshot for your profile</div>
                 </div>
@@ -801,7 +807,7 @@ class ProfileDashboard {
             'scn_location',
             'scn_main_url',
             'scn_bio',
-            'scn_member_since',
+            'member_since',
             'scn_featured_video_url'
         ];
 
@@ -828,9 +834,9 @@ class ProfileDashboard {
         }
 
         // Handle profile image
-        if (isset($form_data['scn_profile_image']) && !empty($form_data['scn_profile_image'])) {
-            if (set_post_thumbnail($profile_id, intval($form_data['scn_profile_image']))) {
-                $updated_fields[] = 'scn_profile_image';
+        if (isset($form_data['profile_image']) && !empty($form_data['profile_image'])) {
+            if (set_post_thumbnail($profile_id, intval($form_data['profile_image']))) {
+                $updated_fields[] = 'profile_image';
             }
         }
 
@@ -888,7 +894,7 @@ class ProfileDashboard {
 
         // Verify the profile belongs to the current user
         $profile = get_post($profile_id);
-        if (!$profile || $profile->post_type !== 'scn_profile') {
+        if (!$profile || $profile->post_type !== 'member') {
             wp_send_json_error('Invalid profile');
         }
 
@@ -963,7 +969,7 @@ class ProfileDashboard {
         $exclude_ids = is_array($enrolled_courses) ? $enrolled_courses : [];
         
         $courses = get_posts([
-            'post_type' => 'scn_course',
+            'post_type' => 'course',
             'post_status' => 'publish',
             'posts_per_page' => 10,
             'orderby' => 'date',
@@ -974,10 +980,10 @@ class ProfileDashboard {
         $html = '';
         if (!empty($courses)) {
             foreach ($courses as $course) {
-                $subtitle = get_post_meta($course->ID, 'scn_course_subtitle', true);
+                $subtitle = get_post_meta($course->ID, 'course_subtitle', true);
                 // Force ensure taxonomy is registered
                 if (!taxonomy_exists('scn_topic')) {
-                    register_taxonomy('scn_topic', 'scn_course', [
+                    register_taxonomy('scn_topic', [], [ // Removed 'course' from object types
                         'labels' => [
                             'name' => __('Topics', 'scn-membership'),
                             'singular_name' => __('Topic', 'scn-membership'),
@@ -1111,7 +1117,7 @@ class ProfileDashboard {
             $courses = [];
         } else {
             $courses = get_posts([
-                'post_type' => 'scn_course',
+                'post_type' => 'course',
                 'post_status' => 'publish',
                 'post__in' => $enrolled_courses,
                 'posts_per_page' => 10,
@@ -1123,10 +1129,10 @@ class ProfileDashboard {
         $html = '';
         if (!empty($courses)) {
             foreach ($courses as $course) {
-                $subtitle = get_post_meta($course->ID, 'scn_course_subtitle', true);
+                $subtitle = get_post_meta($course->ID, 'course_subtitle', true);
                 // Force ensure taxonomy is registered
                 if (!taxonomy_exists('scn_topic')) {
-                    register_taxonomy('scn_topic', 'scn_course', [
+                    register_taxonomy('scn_topic', [], [ // Removed 'course' from object types
                         'labels' => [
                             'name' => __('Topics', 'scn-membership'),
                             'singular_name' => __('Topic', 'scn-membership'),
@@ -1254,7 +1260,7 @@ class ProfileDashboard {
         
         // Get courses created by this user (using post_author, not meta)
         $courses = get_posts([
-            'post_type' => 'scn_course',
+            'post_type' => 'course',
             'post_status' => ['publish', 'draft', 'pending'],
             'posts_per_page' => -1,
             'author' => $user_id,
@@ -1265,10 +1271,10 @@ class ProfileDashboard {
         $html = '';
         if (!empty($courses)) {
             foreach ($courses as $course) {
-                $subtitle = get_post_meta($course->ID, 'scn_course_subtitle', true);
+                $subtitle = get_post_meta($course->ID, 'course_subtitle', true);
                 // Force ensure taxonomy is registered
                 if (!taxonomy_exists('scn_topic')) {
-                    register_taxonomy('scn_topic', 'scn_course', [
+                    register_taxonomy('scn_topic', [], [ // Removed 'course' from object types
                         'labels' => [
                             'name' => __('Topics', 'scn-membership'),
                             'singular_name' => __('Topic', 'scn-membership'),
@@ -1385,7 +1391,7 @@ class ProfileDashboard {
     }
 
     public function handleCreateCourseAjax() {
-        check_ajax_referer('scn_dashboard_nonce', 'nonce');
+        check_ajax_referer('course_nonce', '_wpnonce');
         
         if (!is_user_logged_in()) {
             wp_die(__('You must be logged in.', 'scn-membership'));
@@ -1394,20 +1400,49 @@ class ProfileDashboard {
         $user_id = get_current_user_id();
         
         // Get form data
-        $title = sanitize_text_field($_POST['scn_course_title']); // Course title from form
-        $subtitle = sanitize_text_field($_POST['scn_course_subtitle']);
-        $description = sanitize_textarea_field($_POST['scn_course_description']);
-        $ce_enabled = isset($_POST['scn_course_ce_enabled']) ? 1 : 0;
-        $ce_hours = floatval($_POST['scn_course_ce_hours']);
-        $formats = isset($_POST['scn_course_formats']) ? array_map('sanitize_text_field', $_POST['scn_course_formats']) : [];
-        $outcomes = isset($_POST['scn_course_outcomes']) ? array_filter(array_map('sanitize_text_field', $_POST['scn_course_outcomes'])) : [];
-        $topics = isset($_POST['scn_course_topics']) ? array_map('intval', $_POST['scn_course_topics']) : [];
-        $ondemand_title = sanitize_text_field($_POST['scn_ondemand_title']);
-        $ondemand_school = sanitize_text_field($_POST['scn_ondemand_school']);
-        $ondemand_link = esc_url_raw($_POST['scn_ondemand_link']);
+        $title = sanitize_text_field($_POST['course_title']); // Course title from form
+        $subtitle = sanitize_text_field($_POST['course_subtitle']);
+        $description = sanitize_textarea_field($_POST['course_description']);
+        $content = wp_kses_post($_POST['course_content']); // Full course content (WYSIWYG)
+        $image_id = isset($_POST['course_image_id']) ? intval($_POST['course_image_id']) : 0;
+        $ce_enabled = isset($_POST['course_ce_enabled']) ? 1 : 0;
+        $ce_hours = floatval($_POST['course_ce_hours']);
+        
+        // Handle formats - could be array or comma-separated string from URLSearchParams
+        $formats = [];
+        if (isset($_POST['course_formats'])) {
+            if (is_array($_POST['course_formats'])) {
+                $formats = array_map('sanitize_text_field', $_POST['course_formats']);
+            } else if (is_string($_POST['course_formats']) && !empty($_POST['course_formats'])) {
+                $formats = array_map('sanitize_text_field', explode(',', $_POST['course_formats']));
+            }
+        }
+        
+        // Handle outcomes - could be array or comma-separated string
+        $outcomes = [];
+        if (isset($_POST['course_outcomes'])) {
+            if (is_array($_POST['course_outcomes'])) {
+                $outcomes = array_filter(array_map('sanitize_text_field', $_POST['course_outcomes']));
+            } else if (is_string($_POST['course_outcomes']) && !empty($_POST['course_outcomes'])) {
+                $outcomes = array_filter(array_map('sanitize_text_field', explode(',', $_POST['course_outcomes'])));
+            }
+        }
+        
+        // Handle topics - could be array or comma-separated string
+        $topics = [];
+        if (isset($_POST['course_topics'])) {
+            if (is_array($_POST['course_topics'])) {
+                $topics = array_map('intval', $_POST['course_topics']);
+            } else if (is_string($_POST['course_topics']) && !empty($_POST['course_topics'])) {
+                $topics = array_map('intval', explode(',', $_POST['course_topics']));
+            }
+        }
+        $ondemand_title = isset($_POST['scn_ondemand_title']) ? sanitize_text_field($_POST['scn_ondemand_title']) : '';
+        $ondemand_school = isset($_POST['scn_ondemand_school']) ? sanitize_text_field($_POST['scn_ondemand_school']) : '';
+        $ondemand_link = isset($_POST['scn_ondemand_link']) ? esc_url_raw($_POST['scn_ondemand_link']) : '';
 
-        if (empty($title) || empty($description)) {
-            wp_send_json_error('Title and description are required');
+        if (empty($title) || empty($description) || empty($content)) {
+            wp_send_json_error('Title, description and content are required');
         }
 
         if (empty($outcomes)) {
@@ -1417,9 +1452,9 @@ class ProfileDashboard {
         // Create course post
         $course_data = [
             'post_title' => $title,
-            'post_content' => $description,
-            'post_type' => 'scn_course',
-            'post_status' => 'draft',
+            'post_content' => $content,
+            'post_type' => 'course',
+            'post_status' => 'publish',
             'post_author' => $user_id
         ];
 
@@ -1429,28 +1464,206 @@ class ProfileDashboard {
             wp_send_json_error('Failed to create course');
         }
 
-        // Save course meta fields
-        update_post_meta($course_id, 'scn_course_subtitle', $subtitle);
-        update_post_meta($course_id, 'scn_course_description', $description);
-        update_post_meta($course_id, 'scn_course_ce_enabled', $ce_enabled);
-        update_post_meta($course_id, 'scn_course_ce_hours', $ce_hours);
-        update_post_meta($course_id, 'scn_course_formats', $formats);
-        update_post_meta($course_id, 'scn_course_outcomes', $outcomes);
-        
-        // Save on-demand data
-        $ondemand_data = [
-            'title' => $ondemand_title,
-            'school' => $ondemand_school,
-            'link' => $ondemand_link
-        ];
-        update_post_meta($course_id, 'scn_course_ondemand', $ondemand_data);
+        // Set featured image if provided
+        if ($image_id) {
+            set_post_thumbnail($course_id, $image_id);
+        }
 
-        // Set topics taxonomy
+        // Save course ACF fields
+        update_field('scn_course_subtitle', $subtitle, $course_id);
+        update_field('scn_course_description', $description, $course_id);
+        update_field('scn_course_ce_enabled', $ce_enabled, $course_id);
+        update_field('scn_course_ce_hours', $ce_hours, $course_id);
+        update_field('scn_course_formats', $formats, $course_id);
+        update_field('scn_course_outcomes', $outcomes, $course_id);
+        
+        // Save on-demand data if provided
+        if ($ondemand_title || $ondemand_school || $ondemand_link) {
+            $ondemand_data = [
+                'title' => $ondemand_title,
+                'school' => $ondemand_school,
+                'link' => $ondemand_link
+            ];
+            update_post_meta($course_id, 'course_ondemand', $ondemand_data);
+        }
+
+        // Set topics using ACF field instead of taxonomy
         if (!empty($topics)) {
-            wp_set_post_terms($course_id, $topics, 'scn_topic');
+            update_field('scn_course_topics', $topics, $course_id);
+        }
+        
+        // Update bidirectional ACF relationship
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+        if ($profile_id) {
+            // Set course author field to point to member
+            update_field('author', [$profile_id], $course_id);
+            
+            // Get current courses and add this new course
+            $member_courses = get_field('courses', $profile_id);
+            if (!is_array($member_courses)) {
+                $member_courses = [];
+            }
+            if (!in_array($course_id, $member_courses)) {
+                $member_courses[] = $course_id;
+                update_field('courses', $member_courses, $profile_id);
+            }
         }
 
         wp_send_json_success('Course created successfully');
+    }
+
+    public function handleGetCourseDataAjax() {
+        check_ajax_referer('course_nonce', '_wpnonce');
+        
+        if (!is_user_logged_in()) {
+            wp_die(__('You must be logged in.', 'scn-membership'));
+        }
+
+        $course_id = intval($_POST['course_id']);
+        if (!$course_id) {
+            wp_send_json_error('Invalid course ID');
+        }
+
+        $course = get_post($course_id);
+        if (!$course || $course->post_type !== 'course') {
+            wp_send_json_error('Course not found');
+        }
+
+        // Verify user owns this course
+        $user_id = get_current_user_id();
+        if ($course->post_author != $user_id) {
+            wp_send_json_error('Unauthorized access');
+        }
+
+        // Get course data
+        $image_id = get_post_thumbnail_id($course_id);
+        $image_url = $image_id ? wp_get_attachment_image_url($image_id, 'medium') : '';
+        $topic_ids = get_field('scn_course_topics', $course_id) ?: [];
+        
+        $course_data = [
+            'title' => $course->post_title,
+            'subtitle' => get_field('scn_course_subtitle', $course_id),
+            'description' => get_field('scn_course_description', $course_id),
+            'content' => $course->post_content,
+            'image_id' => $image_id,
+            'image_url' => $image_url,
+            'ce_enabled' => (bool) get_field('scn_course_ce_enabled', $course_id),
+            'ce_hours' => get_field('scn_course_ce_hours', $course_id),
+            'formats' => get_field('scn_course_formats', $course_id) ?: [],
+            'outcomes' => get_field('scn_course_outcomes', $course_id) ?: [],
+            'topics' => is_wp_error($topic_ids) ? [] : $topic_ids
+        ];
+
+        wp_send_json_success($course_data);
+    }
+
+    public function handleUpdateCourseAjax() {
+        check_ajax_referer('course_nonce', '_wpnonce');
+        
+        if (!is_user_logged_in()) {
+            wp_die(__('You must be logged in.', 'scn-membership'));
+        }
+
+        $user_id = get_current_user_id();
+        $course_id = intval($_POST['course_id']);
+        
+        if (!$course_id) {
+            wp_send_json_error('Invalid course ID');
+        }
+
+        $course = get_post($course_id);
+        if (!$course || $course->post_type !== 'course') {
+            wp_send_json_error('Course not found');
+        }
+
+        // Verify user owns this course
+        if ($course->post_author != $user_id) {
+            wp_send_json_error('Unauthorized access');
+        }
+
+        // Get form data
+        $title = sanitize_text_field($_POST['course_title']);
+        $subtitle = sanitize_text_field($_POST['course_subtitle']);
+        $description = sanitize_textarea_field($_POST['course_description']);
+        $content = wp_kses_post($_POST['course_content']); // Full course content (WYSIWYG)
+        $image_id = isset($_POST['course_image_id']) ? intval($_POST['course_image_id']) : 0;
+        $ce_enabled = isset($_POST['course_ce_enabled']) && $_POST['course_ce_enabled'] == '1' ? 1 : 0;
+        $ce_hours = floatval($_POST['course_ce_hours']);
+        
+        // Handle formats - could be array or comma-separated string from URLSearchParams
+        $formats = [];
+        if (isset($_POST['course_formats'])) {
+            if (is_array($_POST['course_formats'])) {
+                $formats = array_map('sanitize_text_field', $_POST['course_formats']);
+            } else if (is_string($_POST['course_formats']) && !empty($_POST['course_formats'])) {
+                $formats = array_map('sanitize_text_field', explode(',', $_POST['course_formats']));
+            }
+        }
+        
+        // Handle outcomes - could be array or comma-separated string
+        $outcomes = [];
+        if (isset($_POST['course_outcomes'])) {
+            if (is_array($_POST['course_outcomes'])) {
+                $outcomes = array_filter(array_map('sanitize_text_field', $_POST['course_outcomes']));
+            } else if (is_string($_POST['course_outcomes']) && !empty($_POST['course_outcomes'])) {
+                $outcomes = array_filter(array_map('sanitize_text_field', explode(',', $_POST['course_outcomes'])));
+            }
+        }
+        
+        // Handle topics - could be array or comma-separated string
+        $topics = [];
+        if (isset($_POST['course_topics'])) {
+            if (is_array($_POST['course_topics'])) {
+                $topics = array_map('intval', $_POST['course_topics']);
+            } else if (is_string($_POST['course_topics']) && !empty($_POST['course_topics'])) {
+                $topics = array_map('intval', explode(',', $_POST['course_topics']));
+            }
+        }
+
+        if (empty($title) || empty($description) || empty($content)) {
+            wp_send_json_error('Title, description and content are required');
+        }
+
+        if (empty($outcomes)) {
+            wp_send_json_error('At least one learning outcome is required');
+        }
+
+        // Update course post
+        $course_data = [
+            'ID' => $course_id,
+            'post_title' => $title,
+            'post_content' => $content,
+        ];
+
+        $result = wp_update_post($course_data);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error('Failed to update course');
+        }
+
+        // Update featured image
+        if ($image_id) {
+            set_post_thumbnail($course_id, $image_id);
+        } else {
+            delete_post_thumbnail($course_id);
+        }
+
+        // Save course ACF fields
+        update_field('scn_course_subtitle', $subtitle, $course_id);
+        update_field('scn_course_description', $description, $course_id);
+        update_field('scn_course_ce_enabled', $ce_enabled, $course_id);
+        update_field('scn_course_ce_hours', $ce_hours, $course_id);
+        update_field('scn_course_formats', $formats, $course_id);
+        update_field('scn_course_outcomes', $outcomes, $course_id);
+
+        // Set topics using ACF field instead of taxonomy
+        if (!empty($topics)) {
+            update_field('scn_course_topics', $topics, $course_id);
+        } else {
+            update_field('scn_course_topics', [], $course_id);
+        }
+
+        wp_send_json_success('Course updated successfully');
     }
 
     public function handleEnrollCourseAjax() {
@@ -1470,7 +1683,7 @@ class ProfileDashboard {
 
             // Check if course exists
             $course = get_post($course_id);
-            if (!$course || $course->post_type !== 'scn_course') {
+            if (!$course || $course->post_type !== 'course') {
                 wp_send_json_error('Course not found');
             }
 
@@ -1541,7 +1754,7 @@ class ProfileDashboard {
 
         // Get recent profile updates
         $profile_updates = get_posts([
-            'post_type' => 'scn_profile',
+            'post_type' => 'member',
             'p' => $profile_id,
             'posts_per_page' => 1,
             'post_status' => 'any'
@@ -1581,7 +1794,7 @@ class ProfileDashboard {
 
         // Get recent courses created
         $recent_courses = get_posts([
-            'post_type' => 'scn_course',
+            'post_type' => 'course',
             'author' => $user_id,
             'posts_per_page' => 3,
             'post_status' => 'publish'
@@ -1606,128 +1819,6 @@ class ProfileDashboard {
         return array_slice($activity, 0, $limit);
     }
 
-    // Event AJAX Handlers
-    public function handleGetCreatedEventsAjax() {
-        try {
-            check_ajax_referer('scn_dashboard_nonce', 'nonce');
-            
-            if (!is_user_logged_in()) {
-                wp_die(__('You must be logged in.', 'scn-membership'));
-            }
-
-            $user_id = get_current_user_id();
-
-            // Get user's created events
-            $events = get_posts([
-                'post_type' => 'scn_event',
-                'author' => $user_id,
-                'posts_per_page' => -1,
-                'post_status' => ['publish', 'draft', 'pending'],
-                'orderby' => 'date',
-                'order' => 'DESC'
-            ]);
-
-            if (empty($events)) {
-                wp_send_json_success('<tr><td colspan="5" class="scn-no-data">' . __('You haven\'t created any events yet.', 'scn-membership') . '</td></tr>');
-                return;
-            }
-
-            $html = '';
-            foreach ($events as $event) {
-                $event_name = get_post_meta($event->ID, 'scn_event_name', true) ?: $event->post_title;
-                $location_city = get_post_meta($event->ID, 'scn_event_location_city', true);
-                $location_region = get_post_meta($event->ID, 'scn_event_location_region', true);
-                $dates = get_post_meta($event->ID, 'scn_event_dates', true);
-                $start_date = !empty($dates['start']) ? date('M j, Y', strtotime($dates['start'])) : 'N/A';
-                
-                $location = $location_city ? $location_city : 'N/A';
-                if ($location_region) {
-                    $location .= ', ' . $location_region;
-                }
-                
-                // Status badge
-                $status_class = 'scn-status-' . $event->post_status;
-                $status_text = ucfirst($event->post_status);
-                
-                $html .= '<tr>';
-                $html .= '<td><strong>' . esc_html($event_name) . '</strong></td>';
-                $html .= '<td>' . esc_html($location) . '</td>';
-                $html .= '<td>' . esc_html($start_date) . '</td>';
-                $html .= '<td><span class="scn-status-badge ' . esc_attr($status_class) . '">' . esc_html($status_text) . '</span></td>';
-                $html .= '<td class="scn-actions">';
-                $html .= '<a href="' . get_permalink($event->ID) . '" class="scn-btn scn-btn-sm scn-btn-secondary" target="_blank">View</a> ';
-                $html .= '<a href="' . admin_url('post.php?post=' . $event->ID . '&action=edit') . '" class="scn-btn scn-btn-sm scn-btn-primary">Edit</a>';
-                $html .= '</td>';
-                $html .= '</tr>';
-            }
-
-            wp_send_json_success($html);
-        } catch (\Exception $e) {
-            error_log('SCN Created Events Error: ' . $e->getMessage());
-            wp_send_json_error('Error loading created events: ' . $e->getMessage());
-        }
-    }
-
-    public function handleCreateEventAjax() {
-        check_ajax_referer('scn_dashboard_nonce', 'nonce');
-        
-        if (!is_user_logged_in()) {
-            wp_die(__('You must be logged in.', 'scn-membership'));
-        }
-
-        $user_id = get_current_user_id();
-        
-        // Get form data
-        $event_name = sanitize_text_field($_POST['scn_event_name']);
-        $official_name = sanitize_text_field($_POST['scn_event_official_name']);
-        $location_city = sanitize_text_field($_POST['scn_event_location_city']);
-        $location_region = sanitize_text_field($_POST['scn_event_location_region']);
-        $location_country = sanitize_text_field($_POST['scn_event_location_country']);
-        $start_date = sanitize_text_field($_POST['scn_event_start_date']);
-        $end_date = sanitize_text_field($_POST['scn_event_end_date']);
-        $website = esc_url_raw($_POST['scn_event_website']);
-        $description = sanitize_textarea_field($_POST['scn_event_description']);
-
-        if (empty($event_name) || empty($start_date)) {
-            wp_send_json_error('Event name and start date are required');
-        }
-
-        // Create event post
-        $event_data = [
-            'post_title' => $official_name ?: $event_name,
-            'post_content' => $description,
-            'post_type' => 'scn_event',
-            'post_status' => 'draft',
-            'post_author' => $user_id
-        ];
-
-        $event_id = wp_insert_post($event_data);
-
-        if (is_wp_error($event_id)) {
-            wp_send_json_error('Failed to create event');
-        }
-
-        // Save event meta fields
-        update_post_meta($event_id, 'scn_event_name', $event_name);
-        update_post_meta($event_id, 'scn_event_official_name', $official_name);
-        update_post_meta($event_id, 'scn_event_location_city', $location_city);
-        update_post_meta($event_id, 'scn_event_location_region', $location_region);
-        update_post_meta($event_id, 'scn_event_location_country', $location_country);
-        update_post_meta($event_id, 'scn_event_website', $website);
-        
-        // Save dates
-        $dates = [
-            'start' => $start_date,
-            'end' => $end_date
-        ];
-        update_post_meta($event_id, 'scn_event_dates', $dates);
-        
-        // Save year based on start date
-        $year = date('Y', strtotime($start_date));
-        update_post_meta($event_id, 'scn_event_year', $year);
-
-        wp_send_json_success('Event created successfully');
-    }
 
     /**
      * Handle AJAX request to update basic profile information
@@ -1755,7 +1846,7 @@ class ProfileDashboard {
 
         // Verify that the profile belongs to the current user
         $profile = get_post($profile_id);
-        if (!$profile || $profile->post_type !== 'scn_profile') {
+        if (!$profile || $profile->post_type !== 'member') {
             wp_send_json_error('Invalid profile');
             return;
         }
@@ -1819,43 +1910,79 @@ class ProfileDashboard {
         $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
 
         if (!$profile_id) {
+            error_log('SCN: Invalid profile ID');
             wp_send_json_error('Invalid profile ID');
             return;
         }
 
         // Verify that the profile belongs to the current user
         $profile = get_post($profile_id);
-        if (!$profile || $profile->post_type !== 'scn_profile') {
-            wp_send_json_error('Invalid profile');
+        if (!$profile || $profile->post_type !== 'member') {
+            error_log('SCN: Invalid profile - type is ' . ($profile ? $profile->post_type : 'null'));
+            wp_send_json_error('Invalid profile - expected member post type');
             return;
         }
 
         $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
-        if ($user_id != $profile_user_id) {
+        
+        // Allow if current user owns the profile OR is admin OR is the post author
+        $is_owner = ($user_id == $profile_user_id) || ($user_id == $profile->post_author);
+        $is_admin = current_user_can('manage_options');
+        
+        if (!$is_owner && !$is_admin) {
+            error_log('SCN: Permission denied - user: ' . $user_id . ', profile user: ' . $profile_user_id . ', author: ' . $profile->post_author);
             wp_send_json_error('You do not have permission to edit this profile');
             return;
         }
+        
+        error_log('SCN: Permission granted - processing social links');
 
-        // Check if new format (JSON) or old format (individual fields)
-        if (isset($_POST['social_links'])) {
-            // New repeater format - JSON string
-            $social_links_json = stripslashes($_POST['social_links']);
-            $social_links_data = json_decode($social_links_json, true);
-            
-            if (!is_array($social_links_data)) {
-                wp_send_json_error('Invalid social links data');
-                return;
-            }
-            
-            // Sanitize each link
+        // Check if new format (array) or old format (individual fields)
+        if (isset($_POST['social_links']) && is_array($_POST['social_links'])) {
+            error_log('SCN: New format detected - social_links array');
+            // New repeater format - PHP array
             $social_links = [];
-            foreach ($social_links_data as $link) {
+            foreach ($_POST['social_links'] as $link) {
+                error_log('SCN: Processing link: ' . print_r($link, true));
                 if (isset($link['url']) && !empty($link['url'])) {
+                    $url = esc_url_raw($link['url']);
+                    
+                    // Auto-detect platform from URL
+                    $platform = 'custom';
+                    $label = 'Website';
+                    $icon = 'website';
+                    
+                    if (strpos($url, 'linkedin.com') !== false) {
+                        $platform = 'linkedin';
+                        $label = 'LinkedIn';
+                        $icon = 'linkedin';
+                    } elseif (strpos($url, 'twitter.com') !== false || strpos($url, 'x.com') !== false) {
+                        $platform = 'twitter';
+                        $label = 'Twitter / X';
+                        $icon = 'twitter';
+                    } elseif (strpos($url, 'facebook.com') !== false) {
+                        $platform = 'facebook';
+                        $label = 'Facebook';
+                        $icon = 'facebook';
+                    } elseif (strpos($url, 'instagram.com') !== false) {
+                        $platform = 'instagram';
+                        $label = 'Instagram';
+                        $icon = 'instagram';
+                    } elseif (strpos($url, 'youtube.com') !== false) {
+                        $platform = 'youtube';
+                        $label = 'YouTube';
+                        $icon = 'youtube';
+                    } elseif (strpos($url, 'github.com') !== false) {
+                        $platform = 'github';
+                        $label = 'GitHub';
+                        $icon = 'github';
+                    }
+                    
                     $social_links[] = [
-                        'platform' => sanitize_key($link['platform'] ?? 'custom'),
-                        'label' => sanitize_text_field($link['label'] ?? ''),
-                        'url' => esc_url_raw($link['url']),
-                        'icon' => sanitize_key($link['icon'] ?? 'custom'),
+                        'platform' => $platform,
+                        'label' => $label,
+                        'url' => $url,
+                        'icon' => $icon,
                         'order' => intval($link['order'] ?? 0)
                     ];
                 }
@@ -1900,10 +2027,218 @@ class ProfileDashboard {
             }
         }
 
-        // Update social links meta
-        update_post_meta($profile_id, 'scn_social_links', $social_links);
+        // Update social links via ACF
+        error_log('SCN: Updating social links with data: ' . print_r($social_links, true));
+        $result = update_field('social_links', $social_links, $profile_id);
+        error_log('SCN: Update result: ' . ($result ? 'success' : 'failed'));
 
         wp_send_json_success('Social links updated successfully');
+    }
+
+    /**
+     * Handle AJAX request to update quick facts
+     */
+    public function handleUpdateQuickFactsAjax() {
+        // Debug: Log received data
+        error_log('Quick Facts AJAX - Handler called!');
+        error_log('Quick Facts AJAX - Received POST data: ' . print_r($_POST, true));
+        
+        // Simple test response first
+        if (isset($_POST['test'])) {
+            wp_send_json_success('AJAX handler is working!');
+            return;
+        }
+        
+        // Debug: Check if quick_facts data is present
+        if (!isset($_POST['quick_facts'])) {
+            error_log('Quick Facts AJAX - No quick_facts data found');
+            wp_send_json_error('No quick facts data received');
+            return;
+        }
+        
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update_quick_facts')) {
+            error_log('Quick Facts AJAX - Security check failed');
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in to update your profile');
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+
+        if (!$profile_id) {
+            wp_send_json_error('Invalid profile ID');
+            return;
+        }
+
+        // Verify that the profile belongs to the current user
+        $profile = get_post($profile_id);
+        if (!$profile || $profile->post_type !== 'member') {
+            wp_send_json_error('Invalid profile');
+            return;
+        }
+
+        $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        $is_owner = ($user_id == $profile_user_id) || ($user_id == $profile->post_author);
+        $is_admin = current_user_can('manage_options');
+        
+        if (!$is_owner && !$is_admin) {
+            wp_send_json_error('You do not have permission to edit this profile');
+            return;
+        }
+
+        // Process quick facts array
+        $quick_facts = [];
+        error_log('Quick Facts AJAX - quick_facts isset: ' . (isset($_POST['quick_facts']) ? 'yes' : 'no'));
+        error_log('Quick Facts AJAX - quick_facts is_array: ' . (is_array($_POST['quick_facts'] ?? null) ? 'yes' : 'no'));
+        
+        if (isset($_POST['quick_facts']) && is_array($_POST['quick_facts'])) {
+            error_log('Quick Facts AJAX - Processing ' . count($_POST['quick_facts']) . ' facts');
+            foreach ($_POST['quick_facts'] as $index => $fact) {
+                error_log("Quick Facts AJAX - Processing fact $index: " . print_r($fact, true));
+                if (!empty($fact['title'])) {
+                    $quick_facts[] = [
+                        'title' => sanitize_text_field($fact['title']),
+                        'description' => sanitize_text_field($fact['description'] ?? ''),
+                        'year' => sanitize_text_field($fact['year'] ?? ''),
+                        'order' => intval($fact['order'] ?? 0)
+                    ];
+                }
+            }
+            
+            // Sort by order
+            usort($quick_facts, function($a, $b) {
+                return $a['order'] - $b['order'];
+            });
+        }
+        
+        error_log('Quick Facts AJAX - Final processed facts: ' . print_r($quick_facts, true));
+
+        // Update via ACF
+        update_field('quick_facts', $quick_facts, $profile_id);
+
+        wp_send_json_success('Quick facts updated successfully');
+    }
+
+    /**
+     * Handle AJAX request to update topics
+     */
+    public function handleUpdateTopicsAjax() {
+        // Debug: Log that handler was called
+        error_log('SCN Topics Handler - AJAX handler called!');
+        
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update_topics')) {
+            error_log('SCN Topics Handler - Nonce verification failed');
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in to update your profile');
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+
+        if (!$profile_id) {
+            wp_send_json_error('Invalid profile ID');
+            return;
+        }
+
+        // Verify that the profile belongs to the current user
+        $profile = get_post($profile_id);
+        if (!$profile || $profile->post_type !== 'member') {
+            wp_send_json_error('Invalid profile');
+            return;
+        }
+
+        $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        $is_owner = ($user_id == $profile_user_id) || ($user_id == $profile->post_author);
+        $is_admin = current_user_can('manage_options');
+        
+        if (!$is_owner && !$is_admin) {
+            wp_send_json_error('You do not have permission to edit this profile');
+            return;
+        }
+
+        // Get selected topic IDs
+        $topic_ids = isset($_POST['topics']) && is_array($_POST['topics']) ? array_map('intval', $_POST['topics']) : [];
+
+        // Try multiple saving methods
+        $update_result = false;
+        
+        // Method 1: Update via ACF field
+        $update_result = update_field('topics', $topic_ids, $profile_id);
+        
+        // Method 2: If ACF fails, try taxonomy terms
+        if (!$update_result && !empty($topic_ids)) {
+            wp_set_post_terms($profile_id, $topic_ids, 'scn_topic');
+        }
+        
+        // Method 3: Try field_topics
+        if (!$update_result && !empty($topic_ids)) {
+            update_field('field_topics', $topic_ids, $profile_id);
+        }
+
+        wp_send_json_success('Topics updated successfully');
+    }
+
+    /**
+     * Handle AJAX request to update bio
+     */
+    public function handleUpdateBioAjax() {
+        // Verify nonce
+        if (!isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update_bio')) {
+            wp_send_json_error('Security check failed');
+            return;
+        }
+
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error('You must be logged in to update your profile');
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $profile_id = isset($_POST['profile_id']) ? intval($_POST['profile_id']) : 0;
+
+        if (!$profile_id) {
+            wp_send_json_error('Invalid profile ID');
+            return;
+        }
+
+        // Verify that the profile belongs to the current user
+        $profile = get_post($profile_id);
+        if (!$profile || $profile->post_type !== 'member') {
+            wp_send_json_error('Invalid profile');
+            return;
+        }
+
+        $profile_user_id = get_post_meta($profile_id, 'scn_user_id', true);
+        $is_owner = ($user_id == $profile_user_id) || ($user_id == $profile->post_author);
+        $is_admin = current_user_can('manage_options');
+        
+        if (!$is_owner && !$is_admin) {
+            wp_send_json_error('You do not have permission to edit this profile');
+            return;
+        }
+
+        // Get bio
+        $bio = isset($_POST['bio']) ? wp_kses_post(stripslashes($_POST['bio'])) : '';
+
+        // Update via ACF
+        update_field('bio', $bio, $profile_id);
+
+        wp_send_json_success('Bio updated successfully');
     }
 
     /**
@@ -1933,7 +2268,7 @@ class ProfileDashboard {
 
         // Verify that the profile belongs to the current user
         $profile = get_post($profile_id);
-        if (!$profile || $profile->post_type !== 'scn_profile') {
+        if (!$profile || $profile->post_type !== 'member') {
             wp_send_json_error('Invalid profile');
             return;
         }

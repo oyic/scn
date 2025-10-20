@@ -18,28 +18,28 @@ class AuthService {
         // Member login page
         add_rewrite_rule(
             '^member-login/?$',
-            'index.php?scn_member_login=1',
+            'index.php?member_login=1',
             'top'
         );
         
         // Member registration page
         add_rewrite_rule(
             '^member-register/?$',
-            'index.php?scn_member_register=1',
+            'index.php?member_register=1',
             'top'
         );
         
         // Member dashboard
         add_rewrite_rule(
             '^member-dashboard/?$',
-            'index.php?scn_member_dashboard=1',
+            'index.php?member_dashboard=1',
             'top'
         );
         
         // Member logout
         add_rewrite_rule(
             '^member-logout/?$',
-            'index.php?scn_member_logout=1',
+            'index.php?member_logout=1',
             'top'
         );
         
@@ -52,28 +52,28 @@ class AuthService {
     }
 
     public function addQueryVars($vars) {
-        $vars[] = 'scn_member_login';
-        $vars[] = 'scn_member_register';
-        $vars[] = 'scn_member_dashboard';
-        $vars[] = 'scn_member_logout';
+        $vars[] = 'member_login';
+        $vars[] = 'member_register';
+        $vars[] = 'member_dashboard';
+        $vars[] = 'member_logout';
         $vars[] = 'scn_test_auth';
         return $vars;
     }
 
     public function templateInclude($template) {
-        if (get_query_var('scn_member_login')) {
-            return SCN_MEMBERSHIP_PATH . 'templates/auth/profile-login.php';
+        if (get_query_var('member_login')) {
+            return SCN_MEMBERSHIP_PATH . 'templates/auth/member-login.php';
         }
         
-        if (get_query_var('scn_member_register')) {
+        if (get_query_var('member_register')) {
             return SCN_MEMBERSHIP_PATH . 'templates/auth/member-register.php';
         }
         
-        if (get_query_var('scn_member_dashboard')) {
+        if (get_query_var('member_dashboard')) {
             return SCN_MEMBERSHIP_PATH . 'templates/profiles/profile-dashboard-fixed.php';
         }
         
-        if (get_query_var('scn_member_logout')) {
+        if (get_query_var('member_logout')) {
             // Include authentication functions
             require_once SCN_MEMBERSHIP_PATH . 'includes/profile-auth-functions.php';
             
@@ -95,16 +95,16 @@ class AuthService {
     }
 
     public function handleLoginRedirect($user_login, $user) {
-        // Check if user has a profile
-        $profile = $this->getUserProfile($user->ID);
+        // Check if user has a member profile
+        $member = $this->getUserMember($user->ID);
         
-        if ($profile) {
-            // User has profile, redirect to frontend profile page
-            wp_redirect(home_url('/members-profile/?profile_id=' . $profile->ID));
+        if ($member) {
+            // User has member profile, redirect to member CPT URL format: /member/slug-name
+            wp_redirect(get_permalink($member->ID));
             exit;
         } else {
-            // User doesn't have profile, redirect to profile creation
-            wp_redirect(admin_url('post-new.php?post_type=scn_profile'));
+            // User doesn't have profile, redirect to member creation
+            wp_redirect(admin_url('post-new.php?post_type=member'));
             exit;
         }
     }
@@ -125,12 +125,13 @@ class AuthService {
     public function handleAuthRedirects() {
         // Redirect logged-in users away from login/register pages
         if (is_user_logged_in()) {
-            if (get_query_var('scn_member_login') || get_query_var('scn_member_register')) {
+            if (get_query_var('member_login') || get_query_var('member_register')) {
                 $current_user_id = get_current_user_id();
-                $profile = $this->getUserProfile($current_user_id);
+                $member = $this->getUserMember($current_user_id);
                 
-                if ($profile) {
-                    wp_redirect(home_url('/members-profile/?profile_id=' . $profile->ID));
+                if ($member) {
+                    // Redirect to member CPT URL format: /member/slug-name
+                    wp_redirect(get_permalink($member->ID));
                 } else {
                     wp_redirect(home_url('/member-dashboard/'));
                 }
@@ -138,7 +139,7 @@ class AuthService {
             }
         } else {
             // Redirect non-logged-in users away from dashboard
-            if (get_query_var('scn_member_dashboard')) {
+            if (get_query_var('member_dashboard')) {
                 wp_redirect(home_url('/member-login/'));
                 exit;
             }
@@ -153,18 +154,35 @@ class AuthService {
         }
         
         $user_id = get_current_user_id();
-        $profile = $this->getUserProfile($user_id);
+        $member = $this->getUserMember($user_id);
         
         wp_send_json_success([
-            'has_profile' => !empty($profile),
-            'profile_id' => $profile ? $profile->ID : null,
-            'redirect_url' => $profile ? home_url('/member-dashboard/') : admin_url('post-new.php?post_type=scn_profile')
+            'has_profile' => !empty($member),
+            'member_id' => $member ? $member->ID : null,
+            'redirect_url' => $member ? get_permalink($member->ID) : admin_url('post-new.php?post_type=member')
         ]);
+    }
+
+    private function getUserMember($user_id) {
+        $member_posts = get_posts([
+            'post_type' => 'member',
+            'meta_query' => [
+                [
+                    'key' => 'scn_user_id',
+                    'value' => $user_id,
+                    'compare' => '='
+                ]
+            ],
+            'posts_per_page' => 1,
+            'post_status' => 'publish'
+        ]);
+        
+        return !empty($member_posts) ? $member_posts[0] : null;
     }
 
     private function getUserProfile($user_id) {
         $profile_posts = get_posts([
-            'post_type' => 'scn_profile',
+            'post_type' => 'member',
             'meta_query' => [
                 [
                     'key' => 'scn_user_id',
@@ -205,7 +223,7 @@ class AuthService {
         // Create profile post
         $profile_data = [
             'post_title' => ($user_data['first_name'] ?? '') . ' ' . ($user_data['last_name'] ?? ''),
-            'post_type' => 'scn_profile',
+            'post_type' => 'member',
             'post_status' => 'publish',
             'post_author' => $user_id,
         ];
@@ -221,7 +239,7 @@ class AuthService {
             if (isset($user_data['last_name'])) {
                 update_post_meta($profile_id, 'scn_last_name', $user_data['last_name']);
             }
-            update_post_meta($profile_id, 'scn_member_since', current_time('mysql'));
+            update_post_meta($profile_id, 'member_since', current_time('mysql'));
             
             return [
                 'user_id' => $user_id,

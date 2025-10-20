@@ -143,7 +143,7 @@ echo "<p>If your member post type is called 'member', you would edit this sectio
 echo "<pre style='background: #f8f9fa; padding: 10px; border-radius: 4px;'>";
 echo '$known_member_post_types = [
     \'member\',           // Add your ACF-created member post type name here
-    // \'scn_member\',       // Or any other member-related post types
+    // \'member\',       // Or any other member-related post types
     // \'acf_member\',       // etc.
 ];';
 echo "</pre>";
